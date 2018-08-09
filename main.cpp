@@ -105,7 +105,7 @@ static void _t_generateParseTree () {
 	// KV
 	non_kv->rules.push_back(
 		Rule(non_kv, {
-			non_node   ,
+			term_string,
 			term_colon ,
 			term_indent,
 			non_node   ,
@@ -122,7 +122,7 @@ static void _t_generateParseTree () {
 
     // KV_BLOCKED
     non_kv_blocked->rules.push_back(
-            Rule(non_kv_blocked, { non_node, term_colon, non_node }));
+            Rule(non_kv_blocked, { term_string, term_colon, non_node }));
 
 	// MAP_BLOCKED
     non_map_blocked->rules.push_back(
@@ -147,48 +147,49 @@ static void _t_generateParseTree () {
     auto table_str = parsing_table->toString();
     //cout << table_str;
 
-    auto table_correct = "##### Rules\n" \
-    "# Rule 0 : S' -> S \n" \
-    "# Rule 1 : S -> NODE \n" \
-    "# Rule 2 : KV -> NODE colon #indent NODE #dedent \n" \
-    "# Rule 3 : MAP -> curly_open curly_close \n" \
-    "# Rule 4 : MAP -> curly_open MAP_BLOCKED curly_close \n" \
-    "# Rule 5 : MAP -> KV MAP \n" \
-    "# Rule 6 : MAP -> KV \n" \
-    "# Rule 7 : KV_BLOCKED -> NODE colon NODE \n" \
-    "# Rule 8 : MAP_BLOCKED -> KV_BLOCKED \n" \
-    "# Rule 9 : MAP_BLOCKED -> KV_BLOCKED comma MAP_BLOCKED \n" \
-    "# Rule 10 : NODE -> int \n" \
-    "# Rule 11 : NODE -> double \n" \
-    "# Rule 12 : NODE -> string \n" \
-    "# Rule 13 : NODE -> MAP \n" \
-    "##### Table\n" \
-	"    |   $ | #dedent | #indent | colon | comma | curly_close | curly_open | double | int | string |  KV | KV_BLOCKED |  MAP | MAP_BLOCKED | NODE |   S | \n" \
-	"--------------------------------------------------------------------------------------------------------------------------------------------------------\n" \
-	"  0 |     |         |         |       |       |             |         s4 |     s2 |  s1 |     s3 | go5 |            |  go6 |             |  go7 | go8 | \n" \
-	"  1 | r10 |     r10 |         |   r10 |   r10 |         r10 |            |        |     |        |     |            |      |             |      |     | \n" \
-	"  2 | r11 |     r11 |         |   r11 |   r11 |         r11 |            |        |     |        |     |            |      |             |      |     | \n" \
-	"  3 | r12 |     r12 |         |   r12 |   r12 |         r12 |            |        |     |        |     |            |      |             |      |     | \n" \
-	"  4 |     |         |         |       |       |          s9 |         s4 |     s2 |  s1 |     s3 | go5 |       go10 |  go6 |        go11 | go12 |     | \n" \
-	"  5 |  r6 |      r6 |         |    r6 |    r6 |          r6 |         s4 |     s2 |  s1 |     s3 | go5 |            | go13 |             | go14 |     | \n" \
-	"  6 | r13 |     r13 |         |   r13 |   r13 |         r13 |            |        |     |        |     |            |      |             |      |     | \n" \
-	"  7 |  r1 |         |         |   s15 |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
-	"  8 | acc |         |         |       |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
-	"  9 |  r3 |      r3 |         |    r3 |    r3 |          r3 |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 10 |     |         |         |       |   s16 |          r8 |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 11 |     |         |         |       |       |         s17 |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 12 |     |         |         |   s18 |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 13 |  r5 |      r5 |         |   r13 |    r5 |          r5 |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 14 |     |         |         |   s15 |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 15 |     |         |     s19 |       |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 16 |     |         |         |       |       |             |         s4 |     s2 |  s1 |     s3 | go5 |       go10 |  go6 |        go20 | go12 |     | \n" \
-	" 17 |  r4 |      r4 |         |    r4 |    r4 |          r4 |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 18 |     |         |     s19 |       |       |             |         s4 |     s2 |  s1 |     s3 | go5 |            |  go6 |             | go21 |     | \n" \
-	" 19 |     |         |         |       |       |             |         s4 |     s2 |  s1 |     s3 | go5 |            |  go6 |             | go22 |     | \n" \
-	" 20 |     |         |         |       |       |          r9 |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 21 |     |         |         |   s15 |    r7 |          r7 |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 22 |     |     s23 |         |   s15 |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
-	" 23 |  r2 |      r2 |         |    r2 |    r2 |          r2 |         r2 |     r2 |  r2 |     r2 |     |            |      |             |      |     | \n";
+    auto table_correct =
+		"##### Rules\n" \
+		"# Rule 0 : S' -> S \n" \
+		"# Rule 1 : S -> NODE \n" \
+		"# Rule 2 : KV -> string colon #indent NODE #dedent \n" \
+		"# Rule 3 : MAP -> curly_open curly_close \n" \
+		"# Rule 4 : MAP -> curly_open MAP_BLOCKED curly_close \n" \
+		"# Rule 5 : MAP -> KV MAP \n" \
+		"# Rule 6 : MAP -> KV \n" \
+		"# Rule 7 : KV_BLOCKED -> string colon NODE \n" \
+		"# Rule 8 : MAP_BLOCKED -> KV_BLOCKED \n" \
+		"# Rule 9 : MAP_BLOCKED -> KV_BLOCKED comma MAP_BLOCKED \n" \
+		"# Rule 10 : NODE -> int \n" \
+		"# Rule 11 : NODE -> double \n" \
+		"# Rule 12 : NODE -> string \n" \
+		"# Rule 13 : NODE -> MAP \n" \
+		"##### Table\n" \
+		"    |   $ | #dedent | #indent | colon | comma | curly_close | curly_open | double | int | string |  KV | KV_BLOCKED |  MAP | MAP_BLOCKED | NODE |   S | \n" \
+		"--------------------------------------------------------------------------------------------------------------------------------------------------------\n" \
+		"  0 |     |         |         |       |       |             |         s4 |     s2 |  s1 |     s3 | go5 |            |  go6 |             |  go7 | go8 | \n" \
+		"  1 | r10 |     r10 |         |       |   r10 |         r10 |            |        |     |        |     |            |      |             |      |     | \n" \
+		"  2 | r11 |     r11 |         |       |   r11 |         r11 |            |        |     |        |     |            |      |             |      |     | \n" \
+		"  3 | r12 |     r12 |         |    s9 |   r12 |         r12 |            |        |     |        |     |            |      |             |      |     | \n" \
+		"  4 |     |         |         |       |       |         s11 |            |        |     |    s10 |     |       go12 |      |        go13 |      |     | \n" \
+		"  5 |  r6 |      r6 |         |       |    r6 |          r6 |         s4 |        |     |    s14 | go5 |            | go15 |             |      |     | \n" \
+		"  6 | r13 |     r13 |         |       |   r13 |         r13 |            |        |     |        |     |            |      |             |      |     | \n" \
+		"  7 |  r1 |         |         |       |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
+		"  8 | acc |         |         |       |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
+		"  9 |     |         |     s16 |       |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 10 |     |         |         |   s17 |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 11 |  r3 |      r3 |         |       |    r3 |          r3 |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 12 |     |         |         |       |   s18 |          r8 |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 13 |     |         |         |       |       |         s19 |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 14 |     |         |         |    s9 |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 15 |  r5 |      r5 |         |       |    r5 |          r5 |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 16 |     |         |         |       |       |             |         s4 |     s2 |  s1 |     s3 | go5 |            |  go6 |             | go20 |     | \n" \
+		" 17 |     |         |         |       |       |             |         s4 |     s2 |  s1 |     s3 | go5 |            |  go6 |             | go21 |     | \n" \
+		" 18 |     |         |         |       |       |             |            |        |     |    s10 |     |       go12 |      |        go22 |      |     | \n" \
+		" 19 |  r4 |      r4 |         |       |    r4 |          r4 |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 20 |     |     s23 |         |       |       |             |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 21 |     |         |         |       |    r7 |          r7 |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 22 |     |         |         |       |       |          r9 |            |        |     |        |     |            |      |             |      |     | \n" \
+		" 23 |  r2 |      r2 |         |       |    r2 |          r2 |         r2 |        |     |     r2 |     |            |      |             |      |     | \n";
     assert(table_str == table_correct);
 
     // tokens
@@ -265,95 +266,88 @@ static void _t_generateParseTree () {
 	delete[] text;
 
 	auto node_correct =
-	"Nonterminal(\"S\")\n" \
-	"|-Nonterminal(\"NODE\")\n" \
-	"|-|-Nonterminal(\"MAP\")\n" \
-	"|-|-|-Nonterminal(\"KV\")\n" \
-	"|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-Terminal(\"string\", Token(STRING, 0, 0, indent:0, \"a\"))\n" \
-	"|-|-|-|-Terminal(\"colon\", Token(COLON, 1, 1, indent:0, \":\"))\n" \
-	"|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
-	"|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-Nonterminal(\"MAP\")\n" \
-	"|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
-	"|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 7, 7, indent:4, \"b\"))\n" \
-	"|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 8, 8, indent:4, \":\"))\n" \
-	"|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
-	"|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 11, 13, indent:8, \"abc\"))\n" \
-	"|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
-	"|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
-	"|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
-	"|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 20, 20, indent:4, \"c\"))\n" \
-	"|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 21, 21, indent:4, \":\"))\n" \
-	"|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
-	"|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 31, 31, indent:8, \"x\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 32, 32, indent:8, \":\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"double\", Token(DOUBLE, 34, 36, indent:12, \"1.0\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
-	"|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 46, 46, indent:8, \"y\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 47, 47, indent:8, \":\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"double\", Token(DOUBLE, 49, 51, indent:12, \"2.0\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 61, 61, indent:8, \"z\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 62, 62, indent:8, \":\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"curly_open\", Token(CURLY_OPEN, 64, 64, indent:12, \"{\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP_BLOCKED\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV_BLOCKED\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 66, 66, indent:12, \"i\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 67, 67, indent:12, \":\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 69, 69, indent:16, \"1\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"comma\", Token(COMMA, 71, 71, indent:16, \",\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP_BLOCKED\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV_BLOCKED\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 73, 73, indent:16, \"j\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 74, 74, indent:16, \":\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 76, 76, indent:20, \"2\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"comma\", Token(COMMA, 78, 78, indent:20, \",\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP_BLOCKED\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV_BLOCKED\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 80, 80, indent:20, \"k\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 81, 81, indent:20, \":\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 84, 84, indent:24, \"3\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"curly_close\", Token(CURLY_CLOSE, 86, 86, indent:24, \"}\"))\n" \
-	"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
-	"|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
-	"|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
-	"|-|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
-	"|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 92, 92, indent:4, \"d\"))\n" \
-	"|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 93, 93, indent:4, \":\"))\n" \
-	"|-|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
-	"|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
-	"|-|-|-|-|-|-|-|-|-|-Terminal(\"int\", Token(INT, 95, 96, indent:8, \"13\"))\n" \
-	"|-|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
-	"|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))";
+		"Nonterminal(\"S\")\n" \
+		"|-Nonterminal(\"NODE\")\n" \
+		"|-|-Nonterminal(\"MAP\")\n" \
+		"|-|-|-Nonterminal(\"KV\")\n" \
+		"|-|-|-|-Terminal(\"string\", Token(STRING, 0, 0, indent:0, \"a\"))\n" \
+		"|-|-|-|-Terminal(\"colon\", Token(COLON, 1, 1, indent:0, \":\"))\n" \
+		"|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
+		"|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-Nonterminal(\"MAP\")\n" \
+		"|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
+		"|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 7, 7, indent:4, \"b\"))\n" \
+		"|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 8, 8, indent:4, \":\"))\n" \
+		"|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
+		"|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 11, 13, indent:8, \"abc\"))\n" \
+		"|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
+		"|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
+		"|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
+		"|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 20, 20, indent:4, \"c\"))\n" \
+		"|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 21, 21, indent:4, \":\"))\n" \
+		"|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
+		"|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 31, 31, indent:8, \"x\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 32, 32, indent:8, \":\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"double\", Token(DOUBLE, 34, 36, indent:12, \"1.0\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
+		"|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 46, 46, indent:8, \"y\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 47, 47, indent:8, \":\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"double\", Token(DOUBLE, 49, 51, indent:12, \"2.0\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 61, 61, indent:8, \"z\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 62, 62, indent:8, \":\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"curly_open\", Token(CURLY_OPEN, 64, 64, indent:12, \"{\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP_BLOCKED\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV_BLOCKED\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 66, 66, indent:12, \"i\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 67, 67, indent:12, \":\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 69, 69, indent:16, \"1\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"comma\", Token(COMMA, 71, 71, indent:16, \",\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP_BLOCKED\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV_BLOCKED\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 73, 73, indent:16, \"j\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 74, 74, indent:16, \":\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 76, 76, indent:20, \"2\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"comma\", Token(COMMA, 78, 78, indent:20, \",\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"MAP_BLOCKED\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"KV_BLOCKED\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 80, 80, indent:20, \"k\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 81, 81, indent:20, \":\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 84, 84, indent:24, \"3\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"curly_close\", Token(CURLY_CLOSE, 86, 86, indent:24, \"}\"))\n" \
+		"|-|-|-|-|-|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
+		"|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
+		"|-|-|-|-|-|-|-Nonterminal(\"MAP\")\n" \
+		"|-|-|-|-|-|-|-|-Nonterminal(\"KV\")\n" \
+		"|-|-|-|-|-|-|-|-|-Terminal(\"string\", Token(STRING, 92, 92, indent:4, \"d\"))\n" \
+		"|-|-|-|-|-|-|-|-|-Terminal(\"colon\", Token(COLON, 93, 93, indent:4, \":\"))\n" \
+		"|-|-|-|-|-|-|-|-|-Terminal(\"#indent\", Token(INDENT))\n" \
+		"|-|-|-|-|-|-|-|-|-Nonterminal(\"NODE\")\n" \
+		"|-|-|-|-|-|-|-|-|-|-Terminal(\"int\", Token(INT, 95, 96, indent:8, \"13\"))\n" \
+		"|-|-|-|-|-|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))\n" \
+		"|-|-|-|-Terminal(\"#dedent\", Token(DEDENT))";
 	assert(node_str == node_correct);
+
+    vector<unsigned char> result;
+    parsing_table->saveBinary(result);
 }
 
 int main () {

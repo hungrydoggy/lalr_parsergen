@@ -93,6 +93,8 @@ public:
 		ActionInfo (Action action, int idx);
 	};
 
+	ParsingTable (const vector<unsigned char> &data);
+
 	ParsingTable (
 			const vector<shared_ptr<Nonterminal>> &symbols,
 			const shared_ptr<Nonterminal> &start_symbol,
@@ -105,7 +107,11 @@ public:
             const vector<Token> &tokens,
             bool need_print=false);
 
+    bool saveBinary (vector<unsigned char> &result);
+
 private:
+    vector<shared_ptr<Nonterminal>> symbols_;
+    shared_ptr<Nonterminal> start_symbol_;
     map<int, shared_ptr<Terminal>> terminal_map_; // token_type -> terminal
 	vector<const Rule*> rules_;
 	vector<map<shared_ptr<TerminalBase>, ActionInfo>> action_info_map_list_;

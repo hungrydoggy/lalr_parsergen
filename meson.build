@@ -7,6 +7,7 @@ add_global_arguments('-std=c++11', language : 'cpp')
 inc_dirs = []
 
 srcs = run_command('python3', 'find_src.py', 'src').stdout().strip().split('\n')
+srcs += run_command('python3', 'find_src.py', 'external').stdout().strip().split('\n')
 srcs += ['main.cpp']
 
 executable('lalr_parsergen', srcs, include_directories : inc_dirs)

@@ -22,12 +22,6 @@ class Nonterminal;
 
 class TerminalBase {
 public:
-    inline static shared_ptr<Nonterminal> start () {
-        _init();
-        return start_;
-    };
-    
-
     string name;
 
     TerminalBase (const string &name);
@@ -35,16 +29,14 @@ public:
 
     virtual bool isTerminal () = 0;
 
-private:
-    static shared_ptr<Nonterminal> start_;
-    static void _init ();
-
 };
 
 class Rule {
 public:
 	shared_ptr<Nonterminal> left_side;
 	vector<shared_ptr<TerminalBase>> right_side;
+
+    Rule () {}
 
 	Rule (  const shared_ptr<Nonterminal> &left_side,
             const vector<shared_ptr<TerminalBase>> &right_side);
@@ -65,7 +57,7 @@ class Nonterminal : public TerminalBase {
 public:
     vector<Rule> rules;
 
-	inline unsigned int no () { return no_; }
+	//inline unsigned int no () { return no_; }
 
 
     Nonterminal (const string &name);
@@ -74,9 +66,9 @@ public:
 
 
 private:
-	static unsigned int next_no_;
+	//static unsigned int next_no_;
 	
-	unsigned int no_;
+	//unsigned int no_;
 };
 
 

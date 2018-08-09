@@ -5,6 +5,8 @@
 #include <iostream>
 #include <sstream>
 
+#include "../external/paw_print/paw_print.h"
+
 
 namespace parse_table {
 
@@ -19,6 +21,7 @@ using std::sort;
 using std::stringstream;
 using std::to_string;
 
+using namespace paw_print;
 
 
 Configuration::Configuration (
@@ -224,6 +227,9 @@ ParsingTable::ParsingTable(
 		const vector<shared_ptr<Nonterminal>> &symbols,
 		const shared_ptr<Nonterminal> &start_symbol,
 		const vector<shared_ptr<State>> &states) {
+
+    symbols_ = symbols;
+    start_symbol_ = start_symbol;
 
 	map<shared_ptr<State>, int> state_idx_map;
 	for (int si = 0; si < states.size(); ++si)
@@ -545,6 +551,133 @@ shared_ptr<Node> ParsingTable::generateParseTree (
     _printNodeStack(node_stack, text);
 
     return null;
+}
+
+ParsingTable::ParsingTable (const vector<unsigned char> &data) {
+
+    PawPrint paw(data);
+    auto root = paw.root();
+
+    unordered_map<string, shared_ptr<TerminalBase>> termnon_map;
+
+    // load terminals
+    auto pp_terminals = root[0];
+    for (int ti=0; ti<pp_terminals.size(); ++ti) {
+        auto pp_term = pp_terminals[ti];
+        auto name       = pp_term[0].get("");
+        auto token_type = pp_term[0].get(-1);
+
+        auto term = make_shared<Terminal>(name, token_type);
+        terminal_map_[token_type] = term;
+        termnon_map[name] = term;
+    }
+
+    // load nonterminals
+    auto pp_nonterminals = root[1];
+    for (int ni=0; ni<pp_nonterminals.size(); ni+=2) {
+        auto name = pp_nonterminals[ni].get("");
+
+        auto non = make_shared<Nonterminal>(name);
+        termnon_map[name] = non;
+    }
+    for (int ni=0; ni<pp_nonterminals.size(); ni+=2) {
+        auto name      = pp_nonterminals[ni  ].get("");
+        auto pp_rules = pp_nonterminals[ni+1];
+
+        auto non = dynamic_pointer_cast<Nonterminal>(termnon_map[name]);
+
+        non->rules.resize(pp_rules.size());
+        for (int ri=0; ri<pp_rules.size(); ++ri) {
+            auto pp_rule = pp_rules[ri];
+
+            auto &rule = non->rules[ri];
+            rule.left_side = dynamic_pointer_cast<Nonterminal>(
+                    termnon_map[pp_rule[0].get("")]);
+            
+            rule.right_side.resize(pp_rule.size() - 1);
+            for (int rri=1; rri<pp_rule.size(); ++rri)
+                rule.right_side[rri-1] = termnon_map[pp_rule[rri].get("")];
+
+        }
+    }
+
+    // start symbol
+    start_symbol_ = dynamic_pointer_cast<Nonterminal>(termnon_map[root[2].get("")]);
+
+    // action_info_map_list_
+    auto pp_action_info_map_list = root[3];
+    action_info_map_list_.resize(pp_action_info_map_list.size());
+    for (int aim_idx=0; aim_idx<pp_action_info_map_list.size(); ++aim_idx) {
+        auto pp_action_info_map = pp_action_info_map_list[aim_idx];
+        auto &action_info_map   = action_info_map_list_  [aim_idx];
+        for (int ai_idx=0; ai_idx<pp_action_info_map.size(); ++ai_idx) {
+            auto name = pp_action_info_map.getKey(ai_idx);
+            auto pp_action_info = pp_action_info_map[ai_idx];
+
+            auto &termnon = termnon_map[name];
+            action_info_map[termnon] = ActionInfo(
+                    (ParsingTable::ActionInfo::Action)pp_action_info[0].get(-1),
+                    pp_action_info[1].get(-1));
+        }
+    }
+}
+
+bool ParsingTable::saveBinary (vector<unsigned char> &result) {
+    PawPrint paw;
+
+    paw.beginSequence();
+    
+        // terminals
+        paw.beginSequence();
+            for (auto &itr : terminal_map_) {
+                auto &term = itr.second;
+                paw.pushString(term->name);
+                paw.pushInt(term->token_type);
+            }
+        paw.endSequence();
+
+        // nonterminals
+        paw.beginSequence();
+            for (auto &non : symbols_) {
+                paw.pushString(non->name);
+                paw.beginSequence(); // rules
+                    for (auto &r : non->rules) {
+                        paw.beginSequence();
+                            paw.pushString(r.left_side->name);
+                            for (auto &rn : r.right_side) {
+                                paw.pushString(rn->name);
+                            }
+                        paw.endSequence();
+                    }
+                paw.endSequence();
+            }
+        paw.endSequence();
+
+        // start symbol
+        paw.pushString(start_symbol_->name);
+
+        // action_info_map_list_
+        paw.beginSequence();
+            for (auto &action_info_map : action_info_map_list_) {
+                paw.beginMap();
+                    for (auto &itr : action_info_map) {
+                        auto &termnon = itr.first;
+                        auto &info    = itr.second;
+                        paw.pushKey(termnon->name);
+                        paw.beginSequence(); // ActionInfo
+                            paw.pushInt(info.action);
+                            paw.pushInt(info.idx   );
+                        paw.endSequence();
+                    }
+                paw.endMap();
+            }
+        paw.endSequence();
+
+    paw.endSequence();
+
+    result = paw.raw_data();
+
+    return true;
 }
 
 }

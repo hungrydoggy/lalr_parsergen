@@ -18,9 +18,7 @@ using std::stringstream;
 using RuleHistoryByTokenIdx = unordered_map<int, set<unsigned int>>;
 
 
-shared_ptr<Nonterminal> TerminalBase::start_;
-
-unsigned int Nonterminal::next_no_ = 0;
+//unsigned int Nonterminal::next_no_ = 0;
 
 
 
@@ -52,8 +50,8 @@ Terminal::Terminal (const string &name, int token_type)
 
 Nonterminal::Nonterminal (const string &name)
 :TerminalBase(name) {
-	no_ = next_no_;
-	++next_no_;
+	//no_ = next_no_;
+	//++next_no_;
 }
 
 Node::Node (const shared_ptr<TerminalBase> &termnon, const Token *token)
