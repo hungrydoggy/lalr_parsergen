@@ -93,6 +93,8 @@ public:
 		ActionInfo (Action action, int idx);
 	};
 
+	ParsingTable() {}
+
 	ParsingTable (const vector<unsigned char> &data);
 
 	ParsingTable (
@@ -115,6 +117,7 @@ private:
     map<int, shared_ptr<Terminal>> terminal_map_; // token_type -> terminal
 	vector<const Rule*> rules_;
 	vector<map<shared_ptr<TerminalBase>, ActionInfo>> action_info_map_list_;
+
 };
 
 #include "undefines.h"

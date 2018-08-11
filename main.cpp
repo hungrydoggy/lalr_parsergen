@@ -243,27 +243,42 @@ static void _t_generateParseTree () {
     };
     
     // make parse tree
-	ifstream is("../example/map_05.paw", std::ifstream::binary);
+	ifstream is("../../example/map_05.paw", std::ifstream::binary);
 
 	// get length of file:
 	is.seekg(0, is.end);
 	int size = is.tellg();
 	is.seekg(0, is.beg);
 	// allocate memory:
-	char* text = new char[size + 2];
+	char* content = new char[size + 2];
+	char* text    = new char[size + 2];
 	// read data as a block:
-	is.read(text, size);
-	text[size] = '\n';
-	text[size + 1] = 0;
+	is.read(content, size);
+	content[size] = '\n';
+	content[size + 1] = 0;
 	is.close();
+
+	int ci = 0, ti = 0;
+	while (true) {
+		auto c = content[ci];
+		if (c == '\r') {
+			++ci;
+			continue;
+		}
+
+		text[ti] = c;
+		if (c == 0)
+			break;
+
+		++ci;
+		++ti;
+	}
 
     auto root_node = parsing_table->generateParseTree(text, tokens);
     assert(root_node != null);
 
 	auto node_str = root_node->toString(text, 0, true);
     //cout << node_str << endl;
-
-	delete[] text;
 
 	auto node_correct =
 		"Nonterminal(\"S\")\n" \
@@ -348,6 +363,18 @@ static void _t_generateParseTree () {
 
     vector<unsigned char> result;
     parsing_table->saveBinary(result);
+
+	auto loaded = ParsingTable(result);
+
+	auto rn = loaded.generateParseTree(text, tokens);
+	assert(rn != null);
+
+	auto rn_str = rn->toString(text, 0, true);
+	//cout << rn_str << endl;
+	assert(node_str == rn_str);
+
+	delete[] content;
+	delete[] text;
 }
 
 int main () {

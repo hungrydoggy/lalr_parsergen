@@ -553,6 +553,25 @@ shared_ptr<Node> ParsingTable::generateParseTree (
     return null;
 }
 
+static void _loadNonterminal(
+		const PawPrint::Cursor &pp_rules,
+		const shared_ptr<Nonterminal> &non,
+		unordered_map<string, shared_ptr<TerminalBase>> termnon_map) {
+
+	non->rules.resize(pp_rules.size());
+	for (int ri = 0; ri<pp_rules.size(); ++ri) {
+		auto pp_rule = pp_rules[ri];
+
+		auto &rule = non->rules[ri];
+		rule.left_side = dynamic_pointer_cast<Nonterminal>(
+			termnon_map[pp_rule[0].get("")]);
+
+		rule.right_side.resize(pp_rule.size() - 1);
+		for (int rri = 1; rri<pp_rule.size(); ++rri)
+			rule.right_side[rri - 1] = termnon_map[pp_rule[rri].get("")];
+	}
+}
+
 ParsingTable::ParsingTable (const vector<unsigned char> &data) {
 
     PawPrint paw(data);
@@ -565,9 +584,11 @@ ParsingTable::ParsingTable (const vector<unsigned char> &data) {
     for (int ti=0; ti<pp_terminals.size(); ++ti) {
         auto pp_term = pp_terminals[ti];
         auto name       = pp_term[0].get("");
-        auto token_type = pp_term[0].get(-1);
+        auto token_type = pp_term[1].get(-1);
 
         auto term = make_shared<Terminal>(name, token_type);
+		if (name == "$")
+			term = null;
         terminal_map_[token_type] = term;
         termnon_map[name] = term;
     }
@@ -579,33 +600,27 @@ ParsingTable::ParsingTable (const vector<unsigned char> &data) {
 
         auto non = make_shared<Nonterminal>(name);
         termnon_map[name] = non;
+		symbols_.push_back(non);
     }
     for (int ni=0; ni<pp_nonterminals.size(); ni+=2) {
-        auto name      = pp_nonterminals[ni  ].get("");
+        auto name     = pp_nonterminals[ni  ].get("");
         auto pp_rules = pp_nonterminals[ni+1];
 
         auto non = dynamic_pointer_cast<Nonterminal>(termnon_map[name]);
 
-        non->rules.resize(pp_rules.size());
-        for (int ri=0; ri<pp_rules.size(); ++ri) {
-            auto pp_rule = pp_rules[ri];
-
-            auto &rule = non->rules[ri];
-            rule.left_side = dynamic_pointer_cast<Nonterminal>(
-                    termnon_map[pp_rule[0].get("")]);
-            
-            rule.right_side.resize(pp_rule.size() - 1);
-            for (int rri=1; rri<pp_rule.size(); ++rri)
-                rule.right_side[rri-1] = termnon_map[pp_rule[rri].get("")];
-
-        }
+		_loadNonterminal(pp_rules, non, termnon_map);
     }
 
     // start symbol
-    start_symbol_ = dynamic_pointer_cast<Nonterminal>(termnon_map[root[2].get("")]);
+	auto start_symbol_name     = root[2].get("");
+	auto pp_start_symbol_rules = root[3];
+	start_symbol_ = make_shared<Nonterminal>(start_symbol_name);
+	_loadNonterminal(pp_start_symbol_rules, start_symbol_, termnon_map);
+	for (auto &r : start_symbol_->rules)
+		r.left_side = start_symbol_;
 
     // action_info_map_list_
-    auto pp_action_info_map_list = root[3];
+    auto pp_action_info_map_list = root[4];
     action_info_map_list_.resize(pp_action_info_map_list.size());
     for (int aim_idx=0; aim_idx<pp_action_info_map_list.size(); ++aim_idx) {
         auto pp_action_info_map = pp_action_info_map_list[aim_idx];
@@ -620,6 +635,33 @@ ParsingTable::ParsingTable (const vector<unsigned char> &data) {
                     pp_action_info[1].get(-1));
         }
     }
+
+	// rules
+	map<const Rule*, int> rule_idx_map;
+	for (auto &r : start_symbol_->rules) {
+		rule_idx_map[&r] = rules_.size();
+		rules_.push_back(&r);
+	}
+	for (auto &non : symbols_) {
+		for (auto &r : non->rules) {
+			rule_idx_map[&r] = rules_.size();
+			rules_.push_back(&r);
+		}
+	}
+}
+
+static void _pushNonterminal (const shared_ptr<Nonterminal> &non, PawPrint &paw) {
+	paw.pushString(non->name);
+	paw.beginSequence(); // rules
+	for (auto &r : non->rules) {
+		paw.beginSequence();
+		paw.pushString(r.left_side->name);
+		for (auto &rn : r.right_side) {
+			paw.pushString(rn->name);
+		}
+		paw.endSequence();
+	}
+	paw.endSequence();
 }
 
 bool ParsingTable::saveBinary (vector<unsigned char> &result) {
@@ -631,30 +673,26 @@ bool ParsingTable::saveBinary (vector<unsigned char> &result) {
         paw.beginSequence();
             for (auto &itr : terminal_map_) {
                 auto &term = itr.second;
-                paw.pushString(term->name);
-                paw.pushInt(term->token_type);
+				paw.beginSequence();
+				if (term != null) {
+					paw.pushString(term->name);
+					paw.pushInt(term->token_type);
+				}else {
+					paw.pushString("$");
+					paw.pushInt(0);
+				}
+				paw.endSequence();
             }
         paw.endSequence();
 
         // nonterminals
         paw.beginSequence();
-            for (auto &non : symbols_) {
-                paw.pushString(non->name);
-                paw.beginSequence(); // rules
-                    for (auto &r : non->rules) {
-                        paw.beginSequence();
-                            paw.pushString(r.left_side->name);
-                            for (auto &rn : r.right_side) {
-                                paw.pushString(rn->name);
-                            }
-                        paw.endSequence();
-                    }
-                paw.endSequence();
-            }
+            for (auto &non : symbols_)
+				_pushNonterminal(non, paw);
         paw.endSequence();
 
         // start symbol
-        paw.pushString(start_symbol_->name);
+		_pushNonterminal(start_symbol_, paw);
 
         // action_info_map_list_
         paw.beginSequence();
@@ -663,7 +701,11 @@ bool ParsingTable::saveBinary (vector<unsigned char> &result) {
                     for (auto &itr : action_info_map) {
                         auto &termnon = itr.first;
                         auto &info    = itr.second;
-                        paw.pushKey(termnon->name);
+
+						if (termnon != null)
+							paw.pushKey(termnon->name);
+						else
+							paw.pushKey("$");
                         paw.beginSequence(); // ActionInfo
                             paw.pushInt(info.action);
                             paw.pushInt(info.idx   );
