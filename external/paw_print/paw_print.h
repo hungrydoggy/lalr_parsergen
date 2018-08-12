@@ -6,8 +6,8 @@
 #include <stack>
 #include <string>
 
-#include "../../src/token.h"
-#include "../../src/node.h"
+#include <token.h>
+#include <node.h>
 
 
 namespace paw_print {
@@ -115,10 +115,6 @@ public:
 
     void setRawData (const vector<unsigned char> &raw_data);
 
-    bool tokenize (const char *text, vector<Token> &tokens);
-    bool addIndentTokens (const vector<Token> &tokens, vector<Token> &indented);
-    bool loadText (const char *text);
-
 
     // write
     void pushInt    (int    value); 
@@ -164,10 +160,6 @@ private:
 
     stack<int> curly_open_idx_stack_;
     stack<int> square_open_idx_stack_;
-
-
-    // return next idx
-    int _parse_step (const char *text, const vector<Token> &tokens, int start_idx);
 };
 
 template<> bool PawPrint::Cursor::is<int        > () const;

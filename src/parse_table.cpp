@@ -5,7 +5,7 @@
 #include <iostream>
 #include <sstream>
 
-#include "../external/paw_print/paw_print.h"
+#include <paw_print.h>
 
 
 namespace parse_table {
