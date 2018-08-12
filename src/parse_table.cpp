@@ -616,14 +616,14 @@ ParsingTable::ParsingTable (const vector<unsigned char> &data) {
 
     // start symbol
 	auto start_symbol_name     = root[2].get("");
-	auto pp_start_symbol_rules = root[4];
+	auto pp_start_symbol_rules = root[3];
 	start_symbol_ = make_shared<Nonterminal>(start_symbol_name);
 	_loadNonterminal(pp_start_symbol_rules, start_symbol_, termnon_map);
 	for (auto &r : start_symbol_->rules)
 		r.left_side = start_symbol_;
 
     // action_info_map_list_
-    auto pp_action_info_map_list = root[5];
+    auto pp_action_info_map_list = root[4];
     action_info_map_list_.resize(pp_action_info_map_list.size());
     for (int aim_idx=0; aim_idx<pp_action_info_map_list.size(); ++aim_idx) {
         auto pp_action_info_map = pp_action_info_map_list[aim_idx];

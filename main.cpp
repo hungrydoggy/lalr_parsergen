@@ -243,7 +243,11 @@ static void _t_generateParseTree () {
     };
     
     // make parse tree
+#if _WINDOWS
+	ifstream is("../../example/map_05.paw", std::ifstream::binary);
+#else
 	ifstream is("../example/map_05.paw", std::ifstream::binary);
+#endif
 
 	// get length of file:
 	is.seekg(0, is.end);
@@ -515,10 +519,7 @@ static void _t_generatePawPrintParsingTable () {
 }
 
 int main () {
-    cout << 1 << endl;
 	_t_generateParseTree();
-    cout << 2 << endl;
 	_t_generatePawPrintParsingTable();
-    cout << 3 << endl;
     return 0;
 }
