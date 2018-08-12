@@ -421,8 +421,11 @@ static string _makeErrStringForReduce (
 static bool _reduceStack (
         const vector<map<shared_ptr<TerminalBase>, ParsingTable::ActionInfo>> &action_info_map_list,
         const Token *t,
-        const Rule *rule,
+        const vector<const Rule *> &rules,
+        int rule_idx,
         vector<NodeStackInfo> &node_stack) {
+
+    auto rule = rules[rule_idx];
 
     // check stack size
     if (node_stack.size() < rule->right_side.size()) {
@@ -435,6 +438,7 @@ static bool _reduceStack (
 
     // make reduced node
     auto reduced_node = make_shared<Node>(rule->left_side, t);
+    reduced_node->reduced_rule_idx(rule_idx);
 
     for (int ri=0; ri<rule->right_side.size(); ++ri) {
         int si = node_stack.size() - rule->right_side.size() + ri;
@@ -530,7 +534,7 @@ shared_ptr<Node> ParsingTable::generateParseTree (
                             << " with " << t.toString(text)
                             << " #Rule : " << rules_[action_info.idx]->toString() << endl;
                 }
-                _reduceStack(action_info_map_list_, &t, rules_[action_info.idx], node_stack);
+                _reduceStack(action_info_map_list_, &t, rules_, action_info.idx, node_stack);
                 break;
             case ActionInfo::Action::ACCEPT:
                 if (need_print == true)
@@ -607,20 +611,19 @@ ParsingTable::ParsingTable (const vector<unsigned char> &data) {
         auto pp_rules = pp_nonterminals[ni+1];
 
         auto non = dynamic_pointer_cast<Nonterminal>(termnon_map[name]);
-
 		_loadNonterminal(pp_rules, non, termnon_map);
     }
 
     // start symbol
 	auto start_symbol_name     = root[2].get("");
-	auto pp_start_symbol_rules = root[3];
+	auto pp_start_symbol_rules = root[4];
 	start_symbol_ = make_shared<Nonterminal>(start_symbol_name);
 	_loadNonterminal(pp_start_symbol_rules, start_symbol_, termnon_map);
 	for (auto &r : start_symbol_->rules)
 		r.left_side = start_symbol_;
 
     // action_info_map_list_
-    auto pp_action_info_map_list = root[4];
+    auto pp_action_info_map_list = root[5];
     action_info_map_list_.resize(pp_action_info_map_list.size());
     for (int aim_idx=0; aim_idx<pp_action_info_map_list.size(); ++aim_idx) {
         auto pp_action_info_map = pp_action_info_map_list[aim_idx];
@@ -655,10 +658,10 @@ static void _pushNonterminal (const shared_ptr<Nonterminal> &non, PawPrint &paw)
 	paw.beginSequence(); // rules
 	for (auto &r : non->rules) {
 		paw.beginSequence();
-		paw.pushString(r.left_side->name);
-		for (auto &rn : r.right_side) {
-			paw.pushString(rn->name);
-		}
+            paw.pushString(r.left_side->name);
+            for (auto &rn : r.right_side) {
+                paw.pushString(rn->name);
+            }
 		paw.endSequence();
 	}
 	paw.endSequence();

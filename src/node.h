@@ -77,7 +77,7 @@ public:
     PAW_GETTER(Node*, parent)
     PAW_GETTER(const shared_ptr<TerminalBase>&, termnon)
     PAW_GETTER(const Token*, token)
-    PAW_GETTER_SETTER(const Rule*, rule)
+    PAW_GETTER_SETTER(int, reduced_rule_idx)
     PAW_GETTER(const vector<shared_ptr<Node>>&, children)
 
     Node (const shared_ptr<TerminalBase>& termnon, const Token *token);
@@ -90,7 +90,7 @@ private:
     Node *parent_;
     shared_ptr<TerminalBase> termnon_;
     const Token *token_;
-    const Rule *rule_;
+    int reduced_rule_idx_;
     vector<shared_ptr<Node>> children_;
 };
 

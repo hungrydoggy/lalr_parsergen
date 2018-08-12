@@ -515,7 +515,10 @@ static void _t_generatePawPrintParsingTable () {
 }
 
 int main () {
+    cout << 1 << endl;
 	_t_generateParseTree();
+    cout << 2 << endl;
 	_t_generatePawPrintParsingTable();
+    cout << 3 << endl;
     return 0;
 }

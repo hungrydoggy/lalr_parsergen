@@ -58,7 +58,7 @@ Node::Node (const shared_ptr<TerminalBase> &termnon, const Token *token)
 :parent_(null),
  termnon_(termnon),
  token_(token),
- rule_(null) {
+ reduced_rule_idx_(-1) {
 
 }
 
