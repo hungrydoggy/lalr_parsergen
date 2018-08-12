@@ -243,7 +243,7 @@ static void _t_generateParseTree () {
     };
     
     // make parse tree
-	ifstream is("../../example/map_05.paw", std::ifstream::binary);
+	ifstream is("../example/map_05.paw", std::ifstream::binary);
 
 	// get length of file:
 	is.seekg(0, is.end);
@@ -377,7 +377,145 @@ static void _t_generateParseTree () {
 	delete[] text;
 }
 
+static void _t_generatePawPrintParsingTable () {
+    Token::to_string_func = [](const char *text, const Token *t) {
+        stringstream ss;
+        ss << "Token(";
+        switch (t->type) {
+            case TokenType::INDENT      : ss << "INDENT)"       ; return ss.str();
+            case TokenType::DEDENT      : ss << "DEDENT)"       ; return ss.str();
+            case TokenType::END_OF_FILE : ss << "END_OF_FILE)"  ; return ss.str();
+            case TokenType::INT         : ss << "INT, "         ; break;
+            case TokenType::DOUBLE      : ss << "DOUBLE, "      ; break;
+            case TokenType::STRING      : ss << "STRING, "      ; break;
+            case TokenType::COLON       : ss << "COLON, "       ; break;
+            case TokenType::COMMA       : ss << "COMMA, "       ; break;
+            case TokenType::DASH        : ss << "DASH, "        ; break;
+            case TokenType::SHARP       : ss << "SHARP, "       ; break;
+            case TokenType::SQUARE_OPEN : ss << "SQUARE_OPEN, " ; break;
+            case TokenType::SQUARE_CLOSE: ss << "SQUARE_CLOSE, "; break;
+            case TokenType::CURLY_OPEN  : ss << "CURLY_OPEN, "  ; break;
+            case TokenType::CURLY_CLOSE : ss << "CURLY_CLOSE, " ; break;
+        }
+
+        auto size = t->last_idx - t->first_idx + 2;
+        auto str = new char [size];
+        memcpy(str, &text[t->first_idx], size-1);
+        str[size-1] = 0;
+        ss << t->first_idx << ", " << t->last_idx << ", indent:" << t->indent
+                << ", \"" << str << "\")";
+        delete[] str;
+        return ss.str();
+    };
+
+	auto term_indent = make_shared<Terminal>("#indent", TokenType::INDENT);
+	auto term_dedent = make_shared<Terminal>("#dedent", TokenType::DEDENT);
+
+	auto term_int    = make_shared<Terminal>("int"   , TokenType::INT   );
+	auto term_double = make_shared<Terminal>("double", TokenType::DOUBLE);
+	auto term_string = make_shared<Terminal>("string", TokenType::STRING);
+	auto term_colon  = make_shared<Terminal>("colon" , TokenType::COLON );
+	auto term_comma  = make_shared<Terminal>("comma" , TokenType::COMMA );
+	auto term_dash   = make_shared<Terminal>("dash"  , TokenType::DASH  );
+	auto term_curly_open  = make_shared<Terminal>("curly_open" , TokenType::CURLY_OPEN );
+	auto term_curly_close = make_shared<Terminal>("curly_close", TokenType::CURLY_CLOSE);
+	auto term_square_open  = make_shared<Terminal>("square_open" , TokenType::SQUARE_OPEN );
+	auto term_square_close = make_shared<Terminal>("square_close", TokenType::SQUARE_CLOSE);
+
+	auto non_kv  = make_shared<Nonterminal>("KV" );
+	auto non_map = make_shared<Nonterminal>("MAP");
+
+	auto non_kv_blocked  = make_shared<Nonterminal>("KV_BLOCKED" );
+	auto non_map_blocked = make_shared<Nonterminal>("MAP_BLOCKED");
+
+    auto non_seq_elem = make_shared<Nonterminal>("SEQ_ELEM");
+	auto non_sequence = make_shared<Nonterminal>("SEQUENCE");
+
+	auto non_node = make_shared<Nonterminal>("NODE");
+
+	auto start = make_shared<Nonterminal>("S");
+
+	ParsingTableGenerator generator;
+	generator.addSymbol(start, true);
+	generator.addSymbol(non_kv);
+	generator.addSymbol(non_map);
+    generator.addSymbol(non_kv_blocked);
+	generator.addSymbol(non_map_blocked);
+	generator.addSymbol(non_seq_elem);
+	generator.addSymbol(non_sequence);
+	generator.addSymbol(non_node);
+
+	// KV
+	non_kv->rules.push_back(
+		Rule(non_kv, {
+			term_string,
+			term_colon ,
+			term_indent,
+			non_node   ,
+			term_dedent,
+			}));
+
+	// MAP
+	non_map->rules.push_back(
+            Rule(non_map, { term_curly_open, term_curly_close }));
+	non_map->rules.push_back(
+            Rule(non_map, { term_curly_open, non_map_blocked, term_curly_close }));
+	non_map->rules.push_back(Rule(non_map, { non_kv , non_map }));
+	non_map->rules.push_back(Rule(non_map, { non_kv           }));
+
+    // KV_BLOCKED
+    non_kv_blocked->rules.push_back(
+            Rule(non_kv_blocked, { term_string, term_colon, non_node }));
+
+	// MAP_BLOCKED
+    non_map_blocked->rules.push_back(
+            Rule(non_map_blocked, { non_kv_blocked }));
+    non_map_blocked->rules.push_back(
+            Rule(non_map_blocked, { non_kv_blocked, term_comma, non_map_blocked }));
+
+    // SEQ_ELEM
+    non_seq_elem->rules.push_back(
+            Rule(non_seq_elem, { term_dash, non_node }));
+
+	// SEQUENCE
+    non_sequence->rules.push_back(
+            Rule(non_sequence, { non_seq_elem, non_sequence }));
+    non_sequence->rules.push_back(
+            Rule(non_sequence, { non_seq_elem               }));
+
+
+	// NODE
+	non_node->rules.push_back(Rule(non_node, { term_int     }));
+	non_node->rules.push_back(Rule(non_node, { term_double  }));
+	non_node->rules.push_back(Rule(non_node, { term_string  }));
+	non_node->rules.push_back(Rule(non_node, { non_map      }));
+	non_node->rules.push_back(Rule(non_node, { non_sequence }));
+
+
+	start->rules.push_back(Rule(start, { non_node }));
+
+
+	auto parsing_table = generator.generateTable();
+    auto table_str = parsing_table->toString();
+    cout << table_str;
+
+    vector<unsigned char> result;
+    parsing_table->saveBinary(result);
+
+	auto loaded = ParsingTable(result);
+    auto loaded_str = loaded.toString();
+    //cout << loaded_str;
+    assert(loaded_str == table_str);
+
+    // save
+    std::ofstream f;
+    f.open("paw_print.tab", std::ofstream::out | std::ofstream::binary);
+    f.write((char*)result.data(), result.size());
+    f.close();
+}
+
 int main () {
 	_t_generateParseTree();
+	_t_generatePawPrintParsingTable();
     return 0;
 }
