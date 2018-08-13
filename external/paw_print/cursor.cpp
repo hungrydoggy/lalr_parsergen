@@ -120,7 +120,7 @@ string PawPrint::Cursor::toString (int indent, int indent_inc) const {
             ss << std::fixed << std::setprecision(8) << get(0.0) << endl;
             break;
         case PawPrint::Data::TYPE_STRING:
-            ss << get("") << endl;
+            ss << "\"" << get("") << "\"" << endl;
             break;
         case PawPrint::Data::TYPE_SEQUENCE:
 			for (int i = 0; i < size(); ++i) {
@@ -128,7 +128,7 @@ string PawPrint::Cursor::toString (int indent, int indent_inc) const {
 					for (int i = 0; i<indent; ++i)
 						ss << " ";
 				}
-				ss << (*this)[i].toString(indent + indent_inc, indent_inc);
+				ss << "- " << (*this)[i].toString(indent + indent_inc, indent_inc);
 			}
             break;
         case PawPrint::Data::TYPE_MAP:
