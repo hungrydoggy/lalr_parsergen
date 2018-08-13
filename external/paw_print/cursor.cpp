@@ -105,12 +105,14 @@ int PawPrint::Cursor::size () const {
         return 1;
 }
 
-string PawPrint::Cursor::toString (int indent, int indent_inc) const {
+string PawPrint::Cursor::toString (int indent, int indent_inc, bool ignore_indent) const {
 
     stringstream ss;
 
-    for (int i=0; i<indent; ++i)
-        ss << " ";
+    if (ignore_indent == false) {
+        for (int i=0; i<indent; ++i)
+            ss << " ";
+    }
 
     switch (type()) {
         case PawPrint::Data::TYPE_INT:
@@ -128,7 +130,7 @@ string PawPrint::Cursor::toString (int indent, int indent_inc) const {
 					for (int i = 0; i<indent; ++i)
 						ss << " ";
 				}
-				ss << "- " << (*this)[i].toString(indent + indent_inc, indent_inc);
+				ss << "- " << (*this)[i].toString(indent + indent_inc, indent_inc, true);
 			}
             break;
         case PawPrint::Data::TYPE_MAP:

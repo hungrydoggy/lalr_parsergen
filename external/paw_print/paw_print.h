@@ -95,7 +95,7 @@ public:
 
         int size () const;
 
-        string toString (int indent=0, int indent_inc=2) const;
+        string toString (int indent=0, int indent_inc=2, bool ignore_indent=false) const;
 
     private:
         const PawPrint &paw_print_;
