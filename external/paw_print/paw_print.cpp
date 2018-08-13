@@ -211,13 +211,20 @@ void PawPrint::endSequence () {
     *((DataType*)&raw_data_[old_size]) = Data::TYPE_SEQUENCE_END;
 }
 
-void PawPrint::pushKey (const char *value) {
+void PawPrint::pushKeyValuePair () {
     if (is_closed_ == true)
         return;
 
     int old_size = raw_data_.size();
     raw_data_.resize(old_size + sizeof(DataType));
     *((DataType*)&raw_data_[old_size]) = Data::TYPE_KEY_VALUE_PAIR;
+}
+
+void PawPrint::pushKey (const char *value) {
+    if (is_closed_ == true)
+        return;
+
+    pushKeyValuePair();
 
     pushString(value);
 }

@@ -1,7 +1,16 @@
 #include "./paw_print.h"
 
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
 
 namespace paw_print {
+
+
+using std::cout;
+using std::endl;
+using std::stringstream;
 
 
 PawPrint::Cursor::Cursor (const PawPrint &paw_print, int idx)
@@ -94,6 +103,52 @@ int PawPrint::Cursor::size () const {
         return paw_print_.getDataIdxsOfMap(idx_).size();
     else
         return 1;
+}
+
+string PawPrint::Cursor::toString (int indent, int indent_inc) const {
+
+    stringstream ss;
+
+    for (int i=0; i<indent; ++i)
+        ss << " ";
+
+    switch (type()) {
+        case PawPrint::Data::TYPE_INT:
+            ss << get(0) << endl;
+            break;
+        case PawPrint::Data::TYPE_DOUBLE:
+            ss << std::fixed << std::setprecision(8) << get(0.0) << endl;
+            break;
+        case PawPrint::Data::TYPE_STRING:
+            ss << get("") << endl;
+            break;
+        case PawPrint::Data::TYPE_SEQUENCE:
+			for (int i = 0; i < size(); ++i) {
+				if (i != 0) {
+					for (int i = 0; i<indent; ++i)
+						ss << " ";
+				}
+				ss << (*this)[i].toString(indent + indent_inc, indent_inc);
+			}
+            break;
+        case PawPrint::Data::TYPE_MAP:
+            for (int i=0; i<size(); ++i) {
+				if (i != 0) {
+					for (int i = 0; i<indent; ++i)
+						ss << " ";
+				}
+                ss << getKey(i) << " :" << endl;
+                ss << (*this)[i].toString(indent + indent_inc, indent_inc);
+            }
+            break;
+        default:
+            // TODO err
+            cout << "err: cannot cursor convert to string type \'"
+                    << type() << "\'" << endl;
+            return "";
+    }
+
+    return ss.str();
 }
 
 }

@@ -95,6 +95,8 @@ public:
 
         int size () const;
 
+        string toString (int indent=0, int indent_inc=2) const;
+
     private:
         const PawPrint &paw_print_;
         int idx_;
@@ -121,6 +123,7 @@ public:
     void pushDouble (double value); 
     void pushString (const char *value); 
     inline void pushString (const string &value) { return pushString(value.c_str()); }
+    void pushKeyValuePair ();
     void pushKey (const char *value);
     inline void pushKey (const string &value) { return pushKey(value.c_str()); }
     void beginSequence (); 
