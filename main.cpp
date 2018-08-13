@@ -432,8 +432,9 @@ static void _t_generatePawPrintParsingTable () {
 	auto non_kv_blocked  = make_shared<Nonterminal>("KV_BLOCKED" );
 	auto non_map_blocked = make_shared<Nonterminal>("MAP_BLOCKED");
 
-    auto non_seq_elem = make_shared<Nonterminal>("SEQ_ELEM");
-	auto non_sequence = make_shared<Nonterminal>("SEQUENCE");
+    auto non_seq_elem    = make_shared<Nonterminal>("SEQ_ELEM"   );
+	auto non_sequence    = make_shared<Nonterminal>("SEQUENCE"   );
+	auto non_seq_blocked = make_shared<Nonterminal>("SEQ_BLOCKED");
 
 	auto non_node = make_shared<Nonterminal>("NODE");
 
@@ -441,12 +442,13 @@ static void _t_generatePawPrintParsingTable () {
 
 	ParsingTableGenerator generator;
 	generator.addSymbol(start, true);
-	generator.addSymbol(non_kv);
+	generator.addSymbol(non_kv );
 	generator.addSymbol(non_map);
-    generator.addSymbol(non_kv_blocked);
+    generator.addSymbol(non_kv_blocked );
 	generator.addSymbol(non_map_blocked);
-	generator.addSymbol(non_seq_elem);
-	generator.addSymbol(non_sequence);
+	generator.addSymbol(non_seq_elem   );
+	generator.addSymbol(non_sequence   );
+	generator.addSymbol(non_seq_blocked);
 	generator.addSymbol(non_node);
 
 	// KV
@@ -482,10 +484,20 @@ static void _t_generatePawPrintParsingTable () {
             Rule(non_seq_elem, { term_dash, non_node }));
 
 	// SEQUENCE
+	non_sequence->rules.push_back(
+            Rule(non_sequence, { term_square_open, term_square_close }));
+	non_sequence->rules.push_back(
+            Rule(non_sequence, { term_square_open, non_seq_blocked, term_square_close }));
     non_sequence->rules.push_back(
             Rule(non_sequence, { non_seq_elem, non_sequence }));
     non_sequence->rules.push_back(
             Rule(non_sequence, { non_seq_elem               }));
+
+    // SEQ_BLOCKED
+    non_seq_blocked->rules.push_back(
+            Rule(non_seq_blocked, { non_node, term_comma, non_seq_blocked }));
+    non_seq_blocked->rules.push_back(
+            Rule(non_seq_blocked, { non_node }));
 
 
 	// NODE
