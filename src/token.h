@@ -19,9 +19,10 @@ public:
     int first_idx;
     int last_idx;
     int indent;
+    int line;
 
 
-    Token (int type, int first_idx, int last_idx, int indent);
+    Token (int type, int first_idx, int last_idx, int indent, int line);
 
     string toString (const char *text) const;
 };

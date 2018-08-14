@@ -9,11 +9,12 @@ using std::stringstream;
 
 function<string(const char *text, const Token *token)> Token::to_string_func;
 
-Token::Token (int type, int first_idx, int last_idx, int indent)
+Token::Token (int type, int first_idx, int last_idx, int indent, int line)
 :type(type),
  first_idx(first_idx),
  last_idx(last_idx),
- indent(indent) {
+ indent(indent),
+ line(line) {
 }
 
 string Token::toString (const char *text) const {
