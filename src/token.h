@@ -18,11 +18,18 @@ public:
     int type;
     int first_idx;
     int last_idx;
-    int indent;
-    int line;
+    unsigned short indent;
+    unsigned short column;
+    unsigned short line;
 
 
-    Token (int type, int first_idx, int last_idx, int indent, int line);
+    Token (
+            int type,
+            int first_idx,
+            int last_idx,
+            unsigned short indent,
+            unsigned short column,
+            unsigned short line);
 
     string toString (const char *text) const;
 };
