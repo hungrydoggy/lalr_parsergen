@@ -17,14 +17,56 @@ PawPrint::PawPrint (const vector<unsigned char> &raw_data)
     setRawData(raw_data);
 }
 
+PawPrint::PawPrint (const Cursor &cursor)
+:PawPrint() {
+    operator = (cursor);
+}
+
+const PawPrint& PawPrint::operator = (const Cursor &cursor) {
+    auto cursor_idx = cursor.idx();
+    auto data_size = cursor.paw_print()->dataSize(cursor_idx);
+
+    raw_data_.resize(data_size);
+    column_map_.clear();
+    line_map_  .clear();
+
+    // copy raw_data
+    auto &cursor_raw_data = cursor.paw_print()->raw_data_;
+    for (int di=0; di<raw_data_.size(); ++di) {
+        raw_data_[di] = cursor_raw_data[di + cursor_idx];
+    }
+
+    // copy column_map
+    auto &cursor_column_map = cursor.paw_print()->column_map_;
+    for (auto &itr : cursor_column_map) {
+        auto idx = itr.first - cursor_idx;
+        if (idx < 0 || idx >= data_size)
+            continue;
+
+        column_map_[idx] = itr.second;
+    }
+
+    // copy line_map
+    auto &cursor_line_map = cursor.paw_print()->line_map_;
+    for (auto &itr : cursor_line_map) {
+        auto idx = itr.first - cursor_idx;
+        if (idx < 0 || idx >= data_size)
+            continue;
+
+        line_map_[idx] = itr.second;
+    }
+
+    return *this;
+}
+
 PawPrint::~PawPrint () {
 }
 
 PawPrint::Cursor PawPrint::root () const {
     if (raw_data_.size() <= 0)
-        return Cursor(*this, -1);
+        return Cursor(this, -1);
 
-    return Cursor(*this, 0);
+    return Cursor(this, 0);
 }
 
 DataType PawPrint::type (int idx) const {
@@ -155,7 +197,22 @@ int PawPrint::findRawIdxOfValue (
         return mid_pair_idx;
 }
 
-void PawPrint::pushInt (int value) {
+void PawPrint::pushBool (bool value, int column, int line) {
+    if (is_closed_ == true)
+        return;
+
+    int old_size = raw_data_.size();
+    raw_data_.resize(old_size + sizeof(DataType) + sizeof(char));
+    *((DataType*)&raw_data_[old_size                   ]) = Data::TYPE_BOOL;
+    *((char*     )&raw_data_[old_size + sizeof(DataType)]) = (char)value;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
+}
+
+void PawPrint::pushInt (int value, int column, int line) {
     if (is_closed_ == true)
         return;
 
@@ -163,9 +220,14 @@ void PawPrint::pushInt (int value) {
     raw_data_.resize(old_size + sizeof(DataType) + sizeof(int));
     *((DataType*)&raw_data_[old_size                   ]) = Data::TYPE_INT;
     *((int*     )&raw_data_[old_size + sizeof(DataType)]) = value;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
 }
 
-void PawPrint::pushDouble (double value) {
+void PawPrint::pushDouble (double value, int column, int line) {
     if (is_closed_ == true)
         return;
 
@@ -173,9 +235,14 @@ void PawPrint::pushDouble (double value) {
     raw_data_.resize(old_size + sizeof(DataType) + sizeof(double));
     *((DataType*)&raw_data_[old_size                   ]) = Data::TYPE_DOUBLE;
     *((double*  )&raw_data_[old_size + sizeof(DataType)]) = value;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
 }
 
-void PawPrint::pushString (const char *value) {
+void PawPrint::pushString (const char *value, int column, int line) {
     if (is_closed_ == true)
         return;
 
@@ -191,64 +258,108 @@ void PawPrint::pushString (const char *value) {
     auto p = (const char*)&raw_data_[
             old_size + sizeof(DataType) + sizeof(Data::StrSizeType)];
     memcpy((void*)p, (void*)value, sizeof(const char) * str_count);
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
 }
 
-void PawPrint::beginSequence () {
+void PawPrint::beginSequence (int column, int line) {
     if (is_closed_ == true)
         return;
 
     int old_size = raw_data_.size();
     raw_data_.resize(old_size + sizeof(DataType));
     *((DataType*)&raw_data_[old_size]) = Data::TYPE_SEQUENCE_START;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
 }
 
-void PawPrint::endSequence () {
+void PawPrint::endSequence (int column, int line) {
     if (is_closed_ == true)
         return;
 
     int old_size = raw_data_.size();
     raw_data_.resize(old_size + sizeof(DataType));
     *((DataType*)&raw_data_[old_size]) = Data::TYPE_SEQUENCE_END;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
 }
 
-void PawPrint::pushKeyValuePair () {
+void PawPrint::pushKeyValuePair (int column, int line) {
     if (is_closed_ == true)
         return;
 
     int old_size = raw_data_.size();
     raw_data_.resize(old_size + sizeof(DataType));
     *((DataType*)&raw_data_[old_size]) = Data::TYPE_KEY_VALUE_PAIR;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
 }
 
-void PawPrint::pushKey (const char *value) {
+void PawPrint::pushKey (const char *value, int column, int line) {
     if (is_closed_ == true)
         return;
 
-    pushKeyValuePair();
+    pushKeyValuePair(column, line);
 
-    pushString(value);
+    pushString(value, column, line);
 }
 
-void PawPrint::beginMap () {
+void PawPrint::beginMap (int column, int line) {
     if (is_closed_ == true)
         return;
 
     int old_size = raw_data_.size();
     raw_data_.resize(old_size + sizeof(DataType));
     *((DataType*)&raw_data_[old_size]) = Data::TYPE_MAP_START;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
 }
 
-void PawPrint::endMap () {
+void PawPrint::endMap (int column, int line) {
     if (is_closed_ == true)
         return;
 
     int old_size = raw_data_.size();
     raw_data_.resize(old_size + sizeof(DataType));
     *((DataType*)&raw_data_[old_size]) = Data::TYPE_MAP_END;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
 }
 
 void PawPrint::setRawData (const vector<unsigned char> &raw_data) {
     raw_data_ = raw_data;
+}
+
+int PawPrint::getColumn (int idx) const {
+    if (column_map_.find(idx) == column_map_.end())
+        return -1;
+
+    return column_map_.at(idx);
+}
+
+int PawPrint::getLine (int idx) const {
+    if (line_map_.find(idx) == line_map_.end())
+        return -1;
+
+    return line_map_.at(idx);
 }
 
 }

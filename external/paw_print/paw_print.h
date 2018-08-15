@@ -50,24 +50,32 @@ public:
 		using StrSizeType = unsigned short;
 
 		static const DataType TYPE_NONE = 0;
-		static const DataType TYPE_INT = 1;
-		static const DataType TYPE_DOUBLE = 2;
-		static const DataType TYPE_STRING = 3;
 
-		static const DataType TYPE_SEQUENCE = 4;
-		static const DataType TYPE_SEQUENCE_START = 4;
-		static const DataType TYPE_SEQUENCE_END = 5;
+		static const DataType TYPE_BOOL   = 1;
+		static const DataType TYPE_INT    = 2;
+		static const DataType TYPE_DOUBLE = 3;
+		static const DataType TYPE_STRING = 4;
 
-		static const DataType TYPE_MAP = 6;
-		static const DataType TYPE_MAP_START = 6;
-		static const DataType TYPE_MAP_END = 7;
+		static const DataType TYPE_SEQUENCE       = 5;
+		static const DataType TYPE_SEQUENCE_START = 5;
+		static const DataType TYPE_SEQUENCE_END   = 6;
 
-		static const DataType TYPE_KEY_VALUE_PAIR = 8;
+		static const DataType TYPE_MAP       = 7;
+		static const DataType TYPE_MAP_START = 7;
+		static const DataType TYPE_MAP_END   = 8;
+
+		static const DataType TYPE_KEY_VALUE_PAIR = 9;
 	};
 
     class Cursor {
     public:
-        Cursor (const PawPrint &paw_print, int idx);
+        const PawPrint* paw_print () const { return paw_print_; }
+
+        Cursor (
+                const PawPrint *paw_print,
+                int idx,
+                const shared_ptr<PawPrint> &holdable = null);
+        Cursor (const Cursor &cursor);
 
 		inline int idx () const { return idx_; }
         DataType type () const;
@@ -77,12 +85,15 @@ public:
 
         bool isSequence () const;
         bool isMap () const;
+        bool isKeyValuePair () const;
+
+        inline bool isValid () const { return idx_ >= 0; }
 
         template <class T>
         T get (T default_value) const {
             if (is<T>() == false)
                 return default_value;
-            return paw_print_.getData<T>(idx_ + sizeof(DataType));
+            return paw_print_->getData<T>(idx_ + sizeof(DataType));
         }
 
         const char* get (const string &default_value) const;
@@ -91,15 +102,29 @@ public:
         Cursor operator[] (const char *key) const;
         Cursor operator[] (const string &key) const;
 
+        const Cursor& operator = (const Cursor &cursor);
+
         const char* getKey (int idx) const;
 
         int size () const;
 
         string toString (int indent=0, int indent_inc=2, bool ignore_indent=false) const;
 
+        const char* getKeyOfPair () const;
+        Cursor getValueOfPair () const;
+
+        int getColumn () const;
+        int getLine () const;
+
+        inline void hold (const shared_ptr<PawPrint> &sp) {
+            if (sp.get() == paw_print_)
+                holder_ = sp;
+        }
+
     private:
-        const PawPrint &paw_print_;
+        const PawPrint *paw_print_;
         int idx_;
+        shared_ptr<PawPrint> holder_; 
     };
 
 
@@ -109,7 +134,10 @@ public:
 
     PawPrint ();
     PawPrint (const vector<unsigned char> &raw_data);
+    PawPrint (const Cursor &cursor);
     ~PawPrint ();
+
+    const PawPrint& operator = (const Cursor &cursor);
 
     DataType type (int idx) const;
 
@@ -117,19 +145,27 @@ public:
 
     void setRawData (const vector<unsigned char> &raw_data);
 
+    int getColumn (int idx) const;
+    int getLine (int idx) const;
+
 
     // write
-    void pushInt    (int    value); 
-    void pushDouble (double value); 
-    void pushString (const char *value); 
-    inline void pushString (const string &value) { return pushString(value.c_str()); }
-    void pushKeyValuePair ();
-    void pushKey (const char *value);
-    inline void pushKey (const string &value) { return pushKey(value.c_str()); }
-    void beginSequence (); 
-    void endSequence (); 
-    void beginMap (); 
-    void endMap (); 
+    void pushBool   (bool   value, int column=-1, int line=-1); 
+    void pushInt    (int    value, int column=-1, int line=-1); 
+    void pushDouble (double value, int column=-1, int line=-1); 
+    void pushString (const char *value, int column=-1, int line=-1); 
+    inline void pushString (const string &value, int column=-1, int line=-1) {
+        return pushString(value.c_str(), column, line);
+    }
+    void pushKeyValuePair (int column=-1, int line=-1);
+    void pushKey (const char *value, int column=-1, int line=-1);
+    inline void pushKey (const string &value, int column=-1, int line=-1) {
+        return pushKey(value.c_str(), column, line);
+    }
+    void beginSequence (int column=-1, int line=-1); 
+    void endSequence   (int column=-1, int line=-1); 
+    void beginMap (int column=-1, int line=-1); 
+    void endMap   (int column=-1, int line=-1); 
 
 
     // read
@@ -163,13 +199,18 @@ private:
 
     stack<int> curly_open_idx_stack_;
     stack<int> square_open_idx_stack_;
+    unordered_map<int, unsigned short> column_map_;
+    unordered_map<int, unsigned short> line_map_;
 };
 
+template<> bool PawPrint::Cursor::is<bool       > () const;
 template<> bool PawPrint::Cursor::is<int        > () const;
 template<> bool PawPrint::Cursor::is<double     > () const;
 template<> bool PawPrint::Cursor::is<const char*> () const;
 template<> bool PawPrint::Cursor::is<string     > () const;
 
+template<> bool        PawPrint::Cursor::get<bool       > (bool        default_value) const;
+template<> double      PawPrint::Cursor::get<double     > (double      default_value) const;
 template<> const char* PawPrint::Cursor::get<const char*> (const char *default_value) const;
 
 }
