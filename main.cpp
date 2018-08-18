@@ -482,6 +482,8 @@ static void _t_generatePawPrintParsingTable () {
     // SEQ_ELEM
     non_seq_elem->rules.push_back(
             Rule(non_seq_elem, { term_dash, non_node }));
+    non_seq_elem->rules.push_back(
+            Rule(non_seq_elem, { term_dash, term_indent, non_node, term_dedent }));
 
 	// SEQUENCE
 	non_sequence->rules.push_back(
