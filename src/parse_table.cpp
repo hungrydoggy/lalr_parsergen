@@ -591,7 +591,7 @@ ParsingTable::ParsingTable (const vector<unsigned char> &data) {
         auto token_type = pp_term[1].get(-1);
 
         auto term = make_shared<Terminal>(name, token_type);
-		if (strcmp(name, "$") == 0)
+		if (name == "$")
 			term = null;
         terminal_map_[token_type] = term;
         termnon_map[name] = term;
