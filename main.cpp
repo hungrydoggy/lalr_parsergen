@@ -466,6 +466,18 @@ static void _t_generatePawPrintParsingTable () {
 			term_colon ,
 			non_node   ,
 			}));
+	non_kv->rules.push_back(
+		Rule(non_kv, {
+			term_string,
+			term_colon ,
+			term_indent,
+			term_dedent,
+			}));
+	non_kv->rules.push_back(
+		Rule(non_kv, {
+			term_string,
+			term_colon ,
+			}));
 
 	// MAP
 	non_map->rules.push_back(

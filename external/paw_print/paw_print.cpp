@@ -115,6 +115,9 @@ int PawPrint::dataSize (int idx) const {
 
     auto t = type(idx);
     switch (t) {
+        case Data::TYPE_NULL: break;
+
+        case Data::TYPE_BOOL  : result += sizeof(char  ); break;
         case Data::TYPE_INT   : result += sizeof(int   ); break;
         case Data::TYPE_DOUBLE: result += sizeof(double); break;
 
@@ -217,6 +220,20 @@ int PawPrint::findRawIdxOfValue (
         return mid_pair_idx;
 }
 
+void PawPrint::pushNull (int column, int line) {
+    if (is_closed_ == true)
+        return;
+
+    int old_size = raw_data_.size();
+    raw_data_.resize(old_size + sizeof(DataType));
+    *((DataType*)&raw_data_[old_size]) = Data::TYPE_NULL;
+
+    if (column >= 0)
+        column_map_[old_size] = (unsigned short)column;
+    if (line >= 0)
+        line_map_[old_size] = (unsigned short)line;
+}
+
 void PawPrint::pushBool (bool value, int column, int line) {
     if (is_closed_ == true)
         return;
@@ -224,7 +241,7 @@ void PawPrint::pushBool (bool value, int column, int line) {
     int old_size = raw_data_.size();
     raw_data_.resize(old_size + sizeof(DataType) + sizeof(char));
     *((DataType*)&raw_data_[old_size                   ]) = Data::TYPE_BOOL;
-    *((char*     )&raw_data_[old_size + sizeof(DataType)]) = (char)value;
+    *((char*    )&raw_data_[old_size + sizeof(DataType)]) = (char)value;
 
     if (column >= 0)
         column_map_[old_size] = (unsigned short)column;

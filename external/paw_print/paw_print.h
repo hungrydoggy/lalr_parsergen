@@ -49,7 +49,9 @@ public:
 	public:
 		using StrSizeType = unsigned short;
 
-		static const DataType TYPE_NONE = 0;
+		static const DataType TYPE_NONE = 0xff;
+
+		static const DataType TYPE_NULL = 0;
 
 		static const DataType TYPE_BOOL   = 1;
 		static const DataType TYPE_INT    = 2;
@@ -164,6 +166,7 @@ public:
 
 
     // write
+    void pushNull   (int column=-1, int line=-1); 
     void pushBool   (bool   value, int column=-1, int line=-1); 
     void pushInt    (int    value, int column=-1, int line=-1); 
     void pushDouble (double value, int column=-1, int line=-1); 
