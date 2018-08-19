@@ -460,6 +460,12 @@ static void _t_generatePawPrintParsingTable () {
 			non_node   ,
 			term_dedent,
 			}));
+	non_kv->rules.push_back(
+		Rule(non_kv, {
+			term_string,
+			term_colon ,
+			non_node   ,
+			}));
 
 	// MAP
 	non_map->rules.push_back(

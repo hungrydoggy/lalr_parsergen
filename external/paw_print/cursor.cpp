@@ -11,6 +11,7 @@ namespace paw_print {
 using std::cout;
 using std::endl;
 using std::stringstream;
+using std::to_string;
 
 
 PawPrint::Cursor::Cursor (
@@ -46,6 +47,22 @@ template<> bool PawPrint::Cursor::is<double     > () const { return type() == Da
 template<> bool PawPrint::Cursor::is<const char*> () const { return type() == Data::TYPE_STRING; }
 template<> bool PawPrint::Cursor::is<string     > () const { return type() == Data::TYPE_STRING; }
 
+template<> bool PawPrint::Cursor::isConvertable<bool       > () const {
+    return is<bool>();
+}
+template<> bool PawPrint::Cursor::isConvertable<int        > () const {
+    return is<int>();
+}
+template<> bool PawPrint::Cursor::isConvertable<double     > () const {
+    return is<double>() || is<int>();
+}
+template<> bool PawPrint::Cursor::isConvertable<const char*> () const {
+    return is<const char*>() || is<double>() || is<int>();
+}
+template<> bool PawPrint::Cursor::isConvertable<string     > () const {
+    return is<string>() || is<double>() || is<int>();
+}
+
 bool PawPrint::Cursor::isSequence () const {
     return type() == Data::TYPE_SEQUENCE;
 }
@@ -74,17 +91,26 @@ double PawPrint::Cursor::get<double> (double default_value) const {
         return default_value;
 }
 
-template<>
-const char* PawPrint::Cursor::get<const char*> (const char *default_value) const {
-    if (is<const char*>() == false)
-        return default_value;
-    return paw_print_->getStrValue(idx_);
+string PawPrint::Cursor::get (const char *default_value) const {
+    if      (is<double>() == true)
+        return to_string(paw_print_->getData<double>(idx_ + sizeof(DataType)));
+    else if (is<int   >() == true)
+        return to_string(paw_print_->getData<int   >(idx_ + sizeof(DataType)));
+    else if (is<string>() == true)
+        return paw_print_->getStrValue(idx_);
+    else
+        return string(default_value);
 }
 
-const char* PawPrint::Cursor::get (const string &default_value) const {
-    if (is<const char*>() == false)
-        return default_value.c_str();
-    return paw_print_->getStrValue(idx_);
+string PawPrint::Cursor::get (const string &default_value) const {
+    if      (is<double>() == true)
+        return to_string(paw_print_->getData<double>(idx_ + sizeof(DataType)));
+    else if (is<int   >() == true)
+        return to_string(paw_print_->getData<int   >(idx_ + sizeof(DataType)));
+    else if (is<string>() == true)
+        return paw_print_->getStrValue(idx_);
+    else
+        return default_value;
 }
 
 PawPrint::Cursor PawPrint::Cursor::operator[] (int idx) const {
@@ -207,8 +233,7 @@ const char* PawPrint::Cursor::getKeyOfPair () const {
         auto key_idx = paw_print_->getKeyRawIdxOfPair(idx_);
         return paw_print_->getStrValue(key_idx);
     }else if (isMap() == true && size() > 0) {
-        auto key_idx = paw_print_->getKeyRawIdxOfPair((*this)[0].idx());
-        return paw_print_->getStrValue(key_idx);
+		return getKey(0);
     }
 
     return null;
@@ -219,8 +244,7 @@ PawPrint::Cursor PawPrint::Cursor::getValueOfPair () const {
         auto value_idx = paw_print_->getValueRawIdxOfPair(idx_);
         return Cursor(paw_print_, value_idx, holder_);
     }else if (isMap() == true && size() > 0) {
-        auto value_idx = paw_print_->getValueRawIdxOfPair((*this)[0].idx());
-        return Cursor(paw_print_, value_idx, holder_);
+        return (*this)[0];
     }
 
     return Cursor(paw_print_, -1, holder_);
