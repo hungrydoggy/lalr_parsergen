@@ -63,6 +63,10 @@ template<> bool PawPrint::Cursor::isConvertable<string     > () const {
     return is<string>() || is<double>() || is<int>();
 }
 
+bool PawPrint::Cursor::isNull () const {
+    return type() == Data::TYPE_NULL;
+}
+
 bool PawPrint::Cursor::isSequence () const {
     return type() == Data::TYPE_SEQUENCE;
 }
@@ -182,6 +186,12 @@ string PawPrint::Cursor::toString (int indent, int indent_inc, bool ignore_inden
     }
 
     switch (type()) {
+        case PawPrint::Data::TYPE_NULL:
+            ss << "null" << endl;
+            break;
+        case PawPrint::Data::TYPE_BOOL:
+            ss << get(false) << endl;
+            break;
         case PawPrint::Data::TYPE_INT:
             ss << get(0) << endl;
             break;

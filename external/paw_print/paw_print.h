@@ -92,6 +92,8 @@ public:
         bool isMap () const;
         bool isKeyValuePair () const;
 
+        bool isNull () const;
+
         inline bool isValid () const { return idx_ >= 0; }
 
         template <class T>
