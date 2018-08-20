@@ -20,7 +20,7 @@ class Node;
 class Nonterminal;
 
 
-class TerminalBase {
+class PAW_PRINT_API TerminalBase {
 public:
     string name;
 
@@ -31,7 +31,7 @@ public:
 
 };
 
-class Rule {
+class PAW_PRINT_API Rule {
 public:
 	shared_ptr<Nonterminal> left_side;
 	vector<shared_ptr<TerminalBase>> right_side;
@@ -44,7 +44,7 @@ public:
     string toString () const;
 };
 
-class Terminal : public TerminalBase {
+class PAW_PRINT_API Terminal : public TerminalBase {
 public:
     int token_type;
 
@@ -53,7 +53,7 @@ public:
     bool isTerminal () override { return true; }
 };
 
-class Nonterminal : public TerminalBase {
+class PAW_PRINT_API Nonterminal : public TerminalBase {
 public:
     vector<Rule> rules;
 
@@ -72,7 +72,7 @@ private:
 };
 
 
-class Node {
+class PAW_PRINT_API Node {
 public:
     PAW_GETTER(Node*, parent)
     PAW_GETTER(const shared_ptr<TerminalBase>&, termnon)

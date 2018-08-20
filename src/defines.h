@@ -11,3 +11,13 @@
   PAW_GETTER(TYPE, VAR_NAME) \
   PAW_SETTER(TYPE, VAR_NAME)
 
+
+#ifdef _WINDOWS
+	#ifdef PAW_PRINT_EXPORTS
+		#define PAW_PRINT_API __declspec(dllexport)
+	#else
+		#define PAW_PRINT_API __declspec(dllimport)
+	#endif
+#else
+	#define PAW_PRINT_API 
+#endif

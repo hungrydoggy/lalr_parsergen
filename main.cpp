@@ -24,6 +24,7 @@ public:
         END_OF_FILE,
         INDENT,
         DEDENT,
+        BOOL,
         INT,
         DOUBLE,
         STRING,
@@ -47,6 +48,7 @@ static void _t_generateParseTree () {
             case TokenType::INDENT      : ss << "INDENT)"       ; return ss.str();
             case TokenType::DEDENT      : ss << "DEDENT)"       ; return ss.str();
             case TokenType::END_OF_FILE : ss << "END_OF_FILE)"  ; return ss.str();
+            case TokenType::BOOL        : ss << "BOOL, "        ; break;
             case TokenType::INT         : ss << "INT, "         ; break;
             case TokenType::DOUBLE      : ss << "DOUBLE, "      ; break;
             case TokenType::STRING      : ss << "STRING, "      ; break;
@@ -194,49 +196,49 @@ static void _t_generateParseTree () {
 
     // tokens
     vector<Token> tokens = {
-        Token(5, 0, 0, 0, -1, -1),
-        Token(6, 1, 1, 0, -1, -1),
+        Token(6, 0, 0, 0, -1, -1),
+        Token(7, 1, 1, 0, -1, -1),
         Token(1, 0, 0, 0, -1, -1),
-        Token(5, 7, 7, 4, -1, -1),
-        Token(6, 8, 8, 4, -1, -1),
+        Token(6, 7, 7, 4, -1, -1),
+        Token(7, 8, 8, 4, -1, -1),
         Token(1, 0, 0, 0, -1, -1),
-        Token(5, 11, 13, 8, -1, -1),
+        Token(6, 11, 13, 8, -1, -1),
         Token(2, 0, 0, 0, -1, -1),
-        Token(5, 20, 20, 4, -1, -1),
-        Token(6, 21, 21, 4, -1, -1),
+        Token(6, 20, 20, 4, -1, -1),
+        Token(7, 21, 21, 4, -1, -1),
         Token(1, 0, 0, 0, -1, -1),
-        Token(5, 31, 31, 8, -1, -1),
-        Token(6, 32, 32, 8, -1, -1),
+        Token(6, 31, 31, 8, -1, -1),
+        Token(7, 32, 32, 8, -1, -1),
         Token(1, 0, 0, 0, -1, -1),
-        Token(4, 34, 36, 12, -1, -1),
+        Token(5, 34, 36, 12, -1, -1),
         Token(2, 0, 0, 0, -1, -1),
-        Token(5, 46, 46, 8, -1, -1),
-        Token(6, 47, 47, 8, -1, -1),
+        Token(6, 46, 46, 8, -1, -1),
+        Token(7, 47, 47, 8, -1, -1),
         Token(1, 0, 0, 0, -1, -1),
-        Token(4, 49, 51, 12, -1, -1),
+        Token(5, 49, 51, 12, -1, -1),
         Token(2, 0, 0, 0, -1, -1),
-        Token(5, 61, 61, 8, -1, -1),
-        Token(6, 62, 62, 8, -1, -1),
+        Token(6, 61, 61, 8, -1, -1),
+        Token(7, 62, 62, 8, -1, -1),
         Token(1, 0, 0, 0, -1, -1),
-        Token(12, 64, 64, 12, -1, -1),
-        Token(5, 66, 66, 12, -1, -1),
-        Token(6, 67, 67, 12, -1, -1),
-        Token(5, 69, 69, 16, -1, -1),
-        Token(7, 71, 71, 16, -1, -1),
-        Token(5, 73, 73, 16, -1, -1),
-        Token(6, 74, 74, 16, -1, -1),
-        Token(5, 76, 76, 20, -1, -1),
-        Token(7, 78, 78, 20, -1, -1),
-        Token(5, 80, 80, 20, -1, -1),
-        Token(6, 81, 81, 20, -1, -1),
-        Token(5, 84, 84, 24, -1, -1),
-        Token(13, 86, 86, 24, -1, -1),
+        Token(13, 64, 64, 12, -1, -1),
+        Token(6, 66, 66, 12, -1, -1),
+        Token(7, 67, 67, 12, -1, -1),
+        Token(6, 69, 69, 16, -1, -1),
+        Token(8, 71, 71, 16, -1, -1),
+        Token(6, 73, 73, 16, -1, -1),
+        Token(7, 74, 74, 16, -1, -1),
+        Token(6, 76, 76, 20, -1, -1),
+        Token(8, 78, 78, 20, -1, -1),
+        Token(6, 80, 80, 20, -1, -1),
+        Token(7, 81, 81, 20, -1, -1),
+        Token(6, 84, 84, 24, -1, -1),
+        Token(14, 86, 86, 24, -1, -1),
         Token(2, 0, 0, 0, -1, -1),
         Token(2, 0, 0, 0, -1, -1),
-        Token(5, 92, 92, 4, -1, -1),
-        Token(6, 93, 93, 4, -1, -1),
+        Token(6, 92, 92, 4, -1, -1),
+        Token(7, 93, 93, 4, -1, -1),
         Token(1, 0, 0, 0, -1, -1),
-        Token(3, 95, 96, 8, -1, -1),
+        Token(4, 95, 96, 8, -1, -1),
         Token(2, 0, 0, 0, -1, -1),
         Token(2, 0, 0, 0, -1, -1),
         Token(0, 0, 0, 0, -1, -1),
@@ -389,6 +391,7 @@ static void _t_generatePawPrintParsingTable () {
             case TokenType::INDENT      : ss << "INDENT)"       ; return ss.str();
             case TokenType::DEDENT      : ss << "DEDENT)"       ; return ss.str();
             case TokenType::END_OF_FILE : ss << "END_OF_FILE)"  ; return ss.str();
+            case TokenType::BOOL        : ss << "BOOL, "        ; break;
             case TokenType::INT         : ss << "INT, "         ; break;
             case TokenType::DOUBLE      : ss << "DOUBLE, "      ; break;
             case TokenType::STRING      : ss << "STRING, "      ; break;
@@ -415,6 +418,7 @@ static void _t_generatePawPrintParsingTable () {
 	auto term_indent = make_shared<Terminal>("#indent", TokenType::INDENT);
 	auto term_dedent = make_shared<Terminal>("#dedent", TokenType::DEDENT);
 
+	auto term_bool   = make_shared<Terminal>("bool"  , TokenType::BOOL  );
 	auto term_int    = make_shared<Terminal>("int"   , TokenType::INT   );
 	auto term_double = make_shared<Terminal>("double", TokenType::DOUBLE);
 	auto term_string = make_shared<Terminal>("string", TokenType::STRING);
@@ -521,6 +525,7 @@ static void _t_generatePawPrintParsingTable () {
 
 
 	// NODE
+	non_node->rules.push_back(Rule(non_node, { term_bool    }));
 	non_node->rules.push_back(Rule(non_node, { term_int     }));
 	non_node->rules.push_back(Rule(non_node, { term_double  }));
 	non_node->rules.push_back(Rule(non_node, { term_string  }));

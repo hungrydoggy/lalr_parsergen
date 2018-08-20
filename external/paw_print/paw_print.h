@@ -22,12 +22,13 @@ using namespace parse_table;
 
 using DataType = unsigned char;
 
-class TokenType {
+class PAW_PRINT_API TokenType {
 public:
     enum Type {
         END_OF_FILE,
         INDENT,
         DEDENT,
+		BOOL,
         INT,
         DOUBLE,
         STRING,
@@ -43,9 +44,9 @@ public:
 };
 
 
-class PawPrint {
+class PAW_PRINT_API PawPrint {
 public:
-	class Data {
+	class PAW_PRINT_API Data {
 	public:
 		using StrSizeType = unsigned short;
 
@@ -69,7 +70,7 @@ public:
 		static const DataType TYPE_KEY_VALUE_PAIR = 9;
 	};
 
-    class Cursor {
+    class PAW_PRINT_API Cursor {
     public:
         const PawPrint* paw_print () const { return paw_print_; }
 

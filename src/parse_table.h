@@ -21,7 +21,7 @@ using std::vector;
 using FirstMap = map<shared_ptr<TerminalBase>, set<shared_ptr<TerminalBase>>>;
 
 
-class Configuration {
+class PAW_PRINT_API Configuration {
 public:
 	PAW_GETTER(const shared_ptr<Nonterminal>&, left_side)
 	PAW_GETTER(const Rule&, rule)
@@ -46,7 +46,7 @@ private:
 	set<shared_ptr<TerminalBase>> lookahead_; // null means end($)
 };
 
-class State {
+class PAW_PRINT_API State {
 public:
 	static shared_ptr<State> makeState(
 			const vector<shared_ptr<Nonterminal>> &all_terminals,
@@ -74,7 +74,7 @@ private:
 	map<shared_ptr<TerminalBase>, shared_ptr<State>> transition_map_;
 };
 
-class ParsingTable {
+class PAW_PRINT_API ParsingTable {
 public:
 	class ActionInfo {
 	public:

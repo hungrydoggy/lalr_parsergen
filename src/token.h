@@ -11,7 +11,7 @@ namespace parse_table {
 using std::function;
 using std::string;
 
-class Token {
+class PAW_PRINT_API Token {
 public:
     static function<string(const char *text, const Token *token)> to_string_func;
 
