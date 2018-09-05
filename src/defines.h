@@ -12,7 +12,9 @@
   PAW_SETTER(TYPE, VAR_NAME)
 
 
-#ifdef _WINDOWS
+#ifdef _NO_EXPORTS
+	#define PAW_PRINT_API 
+#elif defined(_WINDOWS)
 	#ifdef PAW_PRINT_EXPORTS
 		#define PAW_PRINT_API __declspec(dllexport)
 	#else

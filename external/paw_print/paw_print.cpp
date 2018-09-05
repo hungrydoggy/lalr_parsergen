@@ -24,6 +24,7 @@ PawPrint::PawPrint (const Cursor &cursor)
 
 PawPrint::PawPrint (bool          value) :PawPrint() { pushBool  (value); }
 PawPrint::PawPrint (int           value) :PawPrint() { pushInt   (value); } 
+PawPrint::PawPrint (float         value) :PawPrint() { pushDouble(value); }
 PawPrint::PawPrint (double        value) :PawPrint() { pushDouble(value); }
 PawPrint::PawPrint (const char   *value) :PawPrint() { pushString(value); }
 PawPrint::PawPrint (const string &value) :PawPrint() { pushString(value); }
@@ -179,26 +180,42 @@ private:
     const PawPrint &paw_print_;
 };
 
+static void _makeDataIdxsOfMap (
+		const PawPrint *paw,
+		int map_idx,
+		unordered_map<int, vector<int>> &data_idxs_of_map_map,
+		unordered_map<int, vector<int>> &sorted_data_idxs_of_map_map) {
+
+	// make datas
+	auto &result     = data_idxs_of_map_map[map_idx];
+	auto &sorted_res = sorted_data_idxs_of_map_map[map_idx];
+	auto idx = map_idx + sizeof(DataType);
+	while (paw->type(idx) != PawPrint::Data::TYPE_MAP_END) {
+		result    .push_back(idx);
+		sorted_res.push_back(idx);
+
+		idx += paw->dataSize(idx);
+	}
+
+	std::sort(sorted_res.begin(), sorted_res.end(), SortFuncForKey(*paw));
+}
+
 const vector<int>& PawPrint::getDataIdxsOfMap (int map_idx) const {
-    if (data_idxs_of_map_map_.find(map_idx) != data_idxs_of_map_map_.end())
-        return data_idxs_of_map_map_[map_idx];
+    if (data_idxs_of_map_map_.find(map_idx) == data_idxs_of_map_map_.end())
+		_makeDataIdxsOfMap(this, map_idx, data_idxs_of_map_map_, sorted_data_idxs_of_map_map_);
 
-    // make datas
-    auto &result = data_idxs_of_map_map_[map_idx];
-    auto idx = map_idx + sizeof(DataType);
-    while (type(idx) != Data::TYPE_MAP_END) {
-        result.push_back(idx);
+    return data_idxs_of_map_map_[map_idx];
+}
 
-        idx += dataSize(idx);
-    }
+const vector<int>& PawPrint::getSortedDataIdxsOfMap(int map_idx) const {
+	if (sorted_data_idxs_of_map_map_.find(map_idx) == sorted_data_idxs_of_map_map_.end())
+		_makeDataIdxsOfMap(this, map_idx, data_idxs_of_map_map_, sorted_data_idxs_of_map_map_);
 
-    std::sort(result.begin(), result.end(), SortFuncForKey(*this));
-    
-    return result;
+	return sorted_data_idxs_of_map_map_[map_idx];
 }
 
 int PawPrint::findRawIdxOfValue (
-        const vector<int> &map_datas,
+        const vector<int> &sorted_map_datas,
         int first,
         int last,
         const char *key) const {
@@ -207,15 +224,15 @@ int PawPrint::findRawIdxOfValue (
         return -1;
 
     int mid = (first + last) / 2;
-    auto mid_pair_idx = map_datas[mid];
+    auto mid_pair_idx = sorted_map_datas[mid];
 	auto mid_key_idx = getKeyRawIdxOfPair(mid_pair_idx);
     auto mid_key = getStrValue(mid_key_idx);
 
     auto cmp_res = strcmp(key, mid_key);
     if (cmp_res < 0)
-        return findRawIdxOfValue(map_datas, first, mid - 1, key);
+        return findRawIdxOfValue(sorted_map_datas, first, mid - 1, key);
     else if (cmp_res > 0)
-        return findRawIdxOfValue(map_datas, mid + 1, last, key);
+        return findRawIdxOfValue(sorted_map_datas, mid + 1, last, key);
     else
         return mid_pair_idx;
 }

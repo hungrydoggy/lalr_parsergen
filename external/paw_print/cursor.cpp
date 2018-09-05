@@ -13,6 +13,10 @@ using std::endl;
 using std::stringstream;
 using std::to_string;
 
+PawPrint::Cursor::Cursor ()
+:paw_print_(null),
+ idx_(-1) {
+}
 
 PawPrint::Cursor::Cursor (
         const PawPrint *paw_print, int idx, const shared_ptr<PawPrint> &holdable)
@@ -43,15 +47,19 @@ DataType PawPrint::Cursor::type () const {
 
 template<> bool PawPrint::Cursor::is<bool       > () const { return type() == Data::TYPE_BOOL;   }
 template<> bool PawPrint::Cursor::is<int        > () const { return type() == Data::TYPE_INT;    }
+template<> bool PawPrint::Cursor::is<float      > () const { return type() == Data::TYPE_DOUBLE; }
 template<> bool PawPrint::Cursor::is<double     > () const { return type() == Data::TYPE_DOUBLE; }
 template<> bool PawPrint::Cursor::is<const char*> () const { return type() == Data::TYPE_STRING; }
 template<> bool PawPrint::Cursor::is<string     > () const { return type() == Data::TYPE_STRING; }
 
 template<> bool PawPrint::Cursor::isConvertable<bool       > () const {
-    return is<bool>();
+    return is<bool>() || isConvertable<double>() || isConvertable<string>();
 }
 template<> bool PawPrint::Cursor::isConvertable<int        > () const {
     return is<int>();
+}
+template<> bool PawPrint::Cursor::isConvertable<float      > () const {
+    return is<double>() || is<int>();
 }
 template<> bool PawPrint::Cursor::isConvertable<double     > () const {
     return is<double>() || is<int>();
@@ -60,7 +68,7 @@ template<> bool PawPrint::Cursor::isConvertable<const char*> () const {
     return is<const char*>() || is<double>() || is<int>();
 }
 template<> bool PawPrint::Cursor::isConvertable<string     > () const {
-    return is<string>() || is<double>() || is<int>();
+    return is<string>() || is<double>() || is<int>() || is<bool>();
 }
 
 bool PawPrint::Cursor::isNull () const {
@@ -80,9 +88,24 @@ bool PawPrint::Cursor::isKeyValuePair () const {
 
 template<>
 bool PawPrint::Cursor::get<bool> (bool default_value) const {
-    if (is<bool>() == false)
-        return default_value;
-    return paw_print_->getData<char>(idx_) != 0;
+	if (is<bool>() == true)
+		return paw_print_->getData<char>(idx_ + sizeof(DataType)) != 0;
+	else if (isConvertable<double>() == true)
+		return get(0.0) != 0.0;
+	else if (isConvertable<string>() == true)
+		return get("") == "true";
+	else
+		return default_value;
+}
+
+template<>
+float PawPrint::Cursor::get<float>(float default_value) const {
+	if      (is<double>() == true)
+		return (float)paw_print_->getData<double>(idx_ + sizeof(DataType));
+	else if (is<int   >() == true)
+		return (float)paw_print_->getData<int   >(idx_ + sizeof(DataType));
+	else
+		return default_value;
 }
 
 template<>
@@ -96,7 +119,9 @@ double PawPrint::Cursor::get<double> (double default_value) const {
 }
 
 string PawPrint::Cursor::get (const char *default_value) const {
-    if      (is<double>() == true)
+	if      (is<bool>() == true)
+		return to_string(paw_print_->getData<bool  >(idx_ + sizeof(DataType)));
+	else if (is<double>() == true)
         return to_string(paw_print_->getData<double>(idx_ + sizeof(DataType)));
     else if (is<int   >() == true)
         return to_string(paw_print_->getData<int   >(idx_ + sizeof(DataType)));
@@ -107,7 +132,9 @@ string PawPrint::Cursor::get (const char *default_value) const {
 }
 
 string PawPrint::Cursor::get (const string &default_value) const {
-    if      (is<double>() == true)
+    if      (is<bool>() == true)
+		return to_string(paw_print_->getData<bool  >(idx_ + sizeof(DataType)));
+    else if (is<double>() == true)
         return to_string(paw_print_->getData<double>(idx_ + sizeof(DataType)));
     else if (is<int   >() == true)
         return to_string(paw_print_->getData<int   >(idx_ + sizeof(DataType)));
@@ -118,31 +145,22 @@ string PawPrint::Cursor::get (const string &default_value) const {
 }
 
 PawPrint::Cursor PawPrint::Cursor::operator[] (int idx) const {
-    if (isSequence() == true) {
-        auto &data_idxs = paw_print_->getDataIdxsOfSequence(idx_);
-        if (idx < 0 || idx >= data_idxs.size())
-            return Cursor(paw_print_, -1, holder_);
+	if (isSequence() == false)
+		return Cursor(paw_print_, -1, holder_);
 
-        return Cursor(paw_print_, data_idxs[idx], holder_);
-    }else if (isMap() == true) {
-        auto &data_idxs = paw_print_->getDataIdxsOfMap(idx_);
-        int pair_idx = data_idxs[idx];
-        if (pair_idx < 0)
-            return Cursor(paw_print_, -1, holder_);
+    auto &data_idxs = paw_print_->getDataIdxsOfSequence(idx_);
+    if (idx < 0 || idx >= data_idxs.size())
+        return Cursor(paw_print_, -1, holder_);
 
-        auto value_idx = paw_print_->getValueRawIdxOfPair(pair_idx);
-        return Cursor(paw_print_, value_idx, holder_);
-    }
-
-    return Cursor(paw_print_, -1, holder_);
+    return Cursor(paw_print_, data_idxs[idx], holder_);
 }
 
 PawPrint::Cursor PawPrint::Cursor::operator[] (const char *key) const {
     if (isMap() == false)
         return Cursor(paw_print_, -1, holder_);
 
-    auto &data_idxs = paw_print_->getDataIdxsOfMap(idx_);
-    int pair_idx = paw_print_->findRawIdxOfValue(data_idxs, 0, data_idxs.size() - 1, key);
+    auto &sorted_data_idxs = paw_print_->getSortedDataIdxsOfMap(idx_);
+    int pair_idx = paw_print_->findRawIdxOfValue(sorted_data_idxs, 0, sorted_data_idxs.size() - 1, key);
     if (pair_idx < 0)
         return Cursor(paw_print_, -1, holder_);
 
@@ -154,17 +172,12 @@ PawPrint::Cursor PawPrint::Cursor::operator[] (const string &key) const {
     return operator [] (key.c_str());
 }
 
-const char* PawPrint::Cursor::getKey (int idx) const {
+PawPrint::Cursor PawPrint::Cursor::getKeyValuePair (int idx) const {
     if (isMap() == false)
-        return "";
+		return Cursor(paw_print_, -1, holder_);
 
     auto &data_idxs = paw_print_->getDataIdxsOfMap(idx_);
-    int pair_idx = data_idxs[idx];
-    if (pair_idx < 0)
-        return "";
-
-    auto key_idx = paw_print_->getKeyRawIdxOfPair(pair_idx);
-    return paw_print_->getStrValue(key_idx);
+	return PawPrint::Cursor(paw_print_, data_idxs[idx], holder_);
 }
 
 int PawPrint::Cursor::size () const {
@@ -186,6 +199,9 @@ string PawPrint::Cursor::toString (int indent, int indent_inc, bool ignore_inden
     }
 
     switch (type()) {
+        case PawPrint::Data::TYPE_NONE:
+            ss << "NONE" << endl;
+            break;
         case PawPrint::Data::TYPE_NULL:
             ss << "null" << endl;
             break;
@@ -205,11 +221,21 @@ string PawPrint::Cursor::toString (int indent, int indent_inc, bool ignore_inden
             if (size() <= 0)
                 ss << "[ ]" << endl;
 			for (int i = 0; i < size(); ++i) {
+				
 				if (i != 0) {
 					for (int i = 0; i<indent; ++i)
 						ss << " ";
 				}
-				ss << "- " << (*this)[i].toString(indent + indent_inc, indent_inc, true);
+
+				auto child = (*this)[i];
+				auto need_new_line = child.isSequence() || (child.isMap() && child.size() > 1);
+				ss << "- ";
+				if (need_new_line == true) {
+					ss << "\n";
+					for (int i = 0; i<indent + indent_inc; ++i)
+						ss << " ";
+				}
+				ss << child.toString(indent + indent_inc, indent_inc, true);
 			}
             break;
         case PawPrint::Data::TYPE_MAP:
@@ -220,14 +246,14 @@ string PawPrint::Cursor::toString (int indent, int indent_inc, bool ignore_inden
 					for (int i = 0; i<indent; ++i)
 						ss << " ";
 				}
-                ss << getKey(i) << " :" << endl;
-                ss << (*this)[i].toString(indent + indent_inc, indent_inc);
+                ss << getKeyOfPair(i) << " :" << endl;
+                ss << getValueOfPair(i).toString(indent + indent_inc, indent_inc);
             }
             break;
         default:
             // TODO err
             cout << "err: cannot cursor convert to string type \'"
-                    << type() << "\'" << endl;
+                    << to_string(type()) << "\'" << endl;
             return "";
     }
 
@@ -242,23 +268,23 @@ int PawPrint::Cursor::getLine () const {
     return paw_print_->getLine(idx_);
 }
 
-const char* PawPrint::Cursor::getKeyOfPair () const {
+const char* PawPrint::Cursor::getKey () const {
     if (isKeyValuePair() == true) {
         auto key_idx = paw_print_->getKeyRawIdxOfPair(idx_);
         return paw_print_->getStrValue(key_idx);
     }else if (isMap() == true && size() > 0) {
-		return getKey(0);
+		return getKeyOfPair(0);
     }
 
     return null;
 }
 
-PawPrint::Cursor PawPrint::Cursor::getValueOfPair () const {
+PawPrint::Cursor PawPrint::Cursor::getValue () const {
     if (isKeyValuePair() == true) {
         auto value_idx = paw_print_->getValueRawIdxOfPair(idx_);
         return Cursor(paw_print_, value_idx, holder_);
     }else if (isMap() == true && size() > 0) {
-        return (*this)[0];
+        return getValueOfPair(0);
     }
 
     return Cursor(paw_print_, -1, holder_);

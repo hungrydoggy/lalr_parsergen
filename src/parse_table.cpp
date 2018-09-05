@@ -629,8 +629,9 @@ ParsingTable::ParsingTable (const vector<unsigned char> &data) {
         auto pp_action_info_map = pp_action_info_map_list[aim_idx];
         auto &action_info_map   = action_info_map_list_  [aim_idx];
         for (int ai_idx=0; ai_idx<pp_action_info_map.size(); ++ai_idx) {
-            auto name = pp_action_info_map.getKey(ai_idx);
-            auto pp_action_info = pp_action_info_map[ai_idx];
+			auto pair = pp_action_info_map.getKeyValuePair(ai_idx);
+            auto name           = pair.getKey  ();
+            auto pp_action_info = pair.getValue();
 
             auto &termnon = termnon_map[name];
             action_info_map[termnon] = ActionInfo(

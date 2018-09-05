@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stdio.h>
 
+#include "./external/paw_print/paw_print.h"
 #include "./src/parse_table.h"
 #include "./src/parsing_table_generator.h"
 
@@ -17,27 +18,8 @@ using std::ifstream;
 using std::stringstream;
 using std::to_string;
 
+using namespace paw_print;
 
-class TokenType {
-public:
-    enum Type {
-        END_OF_FILE,
-        INDENT,
-        DEDENT,
-        BOOL,
-        INT,
-        DOUBLE,
-        STRING,
-        COLON,
-        COMMA,
-        DASH,
-        SHARP,
-        SQUARE_OPEN,
-        SQUARE_CLOSE,
-        CURLY_OPEN,
-        CURLY_CLOSE,
-    };
-};
 
 static void _t_generateParseTree () {
 
@@ -403,6 +385,7 @@ static void _t_generatePawPrintParsingTable () {
             case TokenType::SQUARE_CLOSE: ss << "SQUARE_CLOSE, "; break;
             case TokenType::CURLY_OPEN  : ss << "CURLY_OPEN, "  ; break;
             case TokenType::CURLY_CLOSE : ss << "CURLY_CLOSE, " ; break;
+            case TokenType::NEW_LINE    : ss << "NEW_LINE, "    ; break;
         }
 
         auto size = t->last_idx - t->first_idx + 2;
@@ -415,8 +398,9 @@ static void _t_generatePawPrintParsingTable () {
         return ss.str();
     };
 
-	auto term_indent = make_shared<Terminal>("#indent", TokenType::INDENT);
-	auto term_dedent = make_shared<Terminal>("#dedent", TokenType::DEDENT);
+	auto term_indent   = make_shared<Terminal>("#indent"  , TokenType::INDENT  );
+	auto term_dedent   = make_shared<Terminal>("#dedent"  , TokenType::DEDENT  );
+	auto term_new_line = make_shared<Terminal>("#new_line", TokenType::NEW_LINE);
 
 	auto term_bool   = make_shared<Terminal>("bool"  , TokenType::BOOL  );
 	auto term_int    = make_shared<Terminal>("int"   , TokenType::INT   );
@@ -433,9 +417,13 @@ static void _t_generatePawPrintParsingTable () {
 	auto non_key = make_shared<Nonterminal>("KEY");
 	auto non_kv  = make_shared<Nonterminal>("KV" );
 	auto non_map = make_shared<Nonterminal>("MAP");
+    
+	auto non_curl_map = make_shared<Nonterminal>("CURL_MAP");
 
 	auto non_kv_blocked  = make_shared<Nonterminal>("KV_BLOCKED" );
 	auto non_map_blocked = make_shared<Nonterminal>("MAP_BLOCKED");
+
+	auto non_squre_seq = make_shared<Nonterminal>("SQUARE_SEQ");
 
     auto non_seq_elem    = make_shared<Nonterminal>("SEQ_ELEM"   );
 	auto non_sequence    = make_shared<Nonterminal>("SEQUENCE"   );
@@ -450,10 +438,12 @@ static void _t_generatePawPrintParsingTable () {
 	generator.addSymbol(non_key);
 	generator.addSymbol(non_kv );
 	generator.addSymbol(non_map);
+	generator.addSymbol(non_curl_map);
     generator.addSymbol(non_kv_blocked );
 	generator.addSymbol(non_map_blocked);
 	generator.addSymbol(non_seq_elem   );
 	generator.addSymbol(non_sequence   );
+	generator.addSymbol(non_squre_seq  );
 	generator.addSymbol(non_seq_blocked);
 	generator.addSymbol(non_node);
 
@@ -466,79 +456,122 @@ static void _t_generatePawPrintParsingTable () {
 	// KV
 	non_kv->rules.push_back(
 		Rule(non_kv, {
-			non_key    ,
-			term_colon ,
-			term_indent,
-			non_node   ,
-			term_dedent,
+			non_key      ,
+			term_colon   ,
+			non_node     ,
+			}));
+	non_kv->rules.push_back(
+		Rule(non_kv, {
+			non_key      ,
+			term_colon   ,
+			term_new_line,
+			term_indent  ,
+			non_node     ,
+			term_dedent  ,
 			}));
 	non_kv->rules.push_back(
 		Rule(non_kv, {
 			non_key    ,
 			term_colon ,
-			non_node   ,
-			}));
-	non_kv->rules.push_back(
-		Rule(non_kv, {
-			non_key    ,
-			term_colon ,
-			term_indent,
-			term_dedent,
-			}));
-	non_kv->rules.push_back(
-		Rule(non_kv, {
-			non_key    ,
-			term_colon ,
+			term_new_line,
 			}));
 
 	// MAP
-	non_map->rules.push_back(
-            Rule(non_map, { term_curly_open, term_curly_close }));
-	non_map->rules.push_back(
-            Rule(non_map, { term_curly_open, non_map_blocked, term_curly_close }));
 	non_map->rules.push_back(Rule(non_map, { non_kv , non_map }));
 	non_map->rules.push_back(Rule(non_map, { non_kv           }));
 
+    // CURL_MAP
+	non_curl_map->rules.push_back(
+            Rule(non_curl_map, { term_curly_open, term_curly_close }));
+	non_curl_map->rules.push_back(
+            Rule(non_curl_map, { term_curly_open, term_new_line, term_curly_close }));
+	non_curl_map->rules.push_back(
+            Rule(non_curl_map, { term_curly_open, non_map_blocked, term_curly_close }));
+	non_curl_map->rules.push_back(
+            Rule(non_curl_map, {
+                term_curly_open,
+                term_new_line,
+                term_indent,
+                non_map_blocked,
+                term_dedent,
+                term_curly_close }));
+
     // KV_BLOCKED
     non_kv_blocked->rules.push_back(
-            Rule(non_kv_blocked, { non_key, term_colon, non_node }));
+            Rule(non_kv_blocked, {
+                non_key,
+                term_colon,
+                non_node }));
+    non_kv_blocked->rules.push_back(
+            Rule(non_kv_blocked, {
+                non_key,
+                term_colon }));
 
 	// MAP_BLOCKED
     non_map_blocked->rules.push_back(
             Rule(non_map_blocked, { non_kv_blocked }));
     non_map_blocked->rules.push_back(
             Rule(non_map_blocked, { non_kv_blocked, term_comma, non_map_blocked }));
+    non_map_blocked->rules.push_back(
+            Rule(non_map_blocked, { non_kv_blocked, term_comma, term_new_line, non_map_blocked }));
 
     // SEQ_ELEM
     non_seq_elem->rules.push_back(
             Rule(non_seq_elem, { term_dash, non_node }));
     non_seq_elem->rules.push_back(
-            Rule(non_seq_elem, { term_dash, term_indent, non_node, term_dedent }));
+            Rule(non_seq_elem, {
+                term_dash,
+                term_new_line,
+                term_indent,
+                non_node,
+                term_dedent }));
 
 	// SEQUENCE
-	non_sequence->rules.push_back(
-            Rule(non_sequence, { term_square_open, term_square_close }));
-	non_sequence->rules.push_back(
-            Rule(non_sequence, { term_square_open, non_seq_blocked, term_square_close }));
     non_sequence->rules.push_back(
             Rule(non_sequence, { non_seq_elem, non_sequence }));
     non_sequence->rules.push_back(
             Rule(non_sequence, { non_seq_elem               }));
 
+    // SQUARE_SEQ
+	non_squre_seq->rules.push_back(
+            Rule(non_squre_seq, { term_square_open, term_square_close }));
+	non_squre_seq->rules.push_back(
+            Rule(non_squre_seq, { term_square_open, non_seq_blocked, term_square_close }));
+	non_squre_seq->rules.push_back(
+            Rule(non_squre_seq, { term_square_open, term_new_line, term_square_close }));
+	non_squre_seq->rules.push_back(
+            Rule(non_squre_seq, {
+                term_square_open,
+                term_new_line,
+                term_indent,
+                non_seq_blocked,
+                term_dedent,
+                term_square_close }));
+
     // SEQ_BLOCKED
     non_seq_blocked->rules.push_back(
             Rule(non_seq_blocked, { non_node, term_comma, non_seq_blocked }));
+    non_seq_blocked->rules.push_back(
+            Rule(non_seq_blocked, { non_node, term_comma, term_new_line, non_seq_blocked }));
     non_seq_blocked->rules.push_back(
             Rule(non_seq_blocked, { non_node }));
 
 
 	// NODE
-	non_node->rules.push_back(Rule(non_node, { term_bool    }));
-	non_node->rules.push_back(Rule(non_node, { term_int     }));
-	non_node->rules.push_back(Rule(non_node, { term_double  }));
-	non_node->rules.push_back(Rule(non_node, { term_string  }));
-	non_node->rules.push_back(Rule(non_node, { non_map      }));
-	non_node->rules.push_back(Rule(non_node, { non_sequence }));
+	non_node->rules.push_back(Rule(non_node, { term_bool     }));
+	non_node->rules.push_back(Rule(non_node, { term_bool    , term_new_line }));
+	non_node->rules.push_back(Rule(non_node, { term_int      }));
+	non_node->rules.push_back(Rule(non_node, { term_int     , term_new_line }));
+	non_node->rules.push_back(Rule(non_node, { term_double   }));
+	non_node->rules.push_back(Rule(non_node, { term_double  , term_new_line }));
+	non_node->rules.push_back(Rule(non_node, { term_string   }));
+	non_node->rules.push_back(Rule(non_node, { term_string  , term_new_line }));
+	non_node->rules.push_back(Rule(non_node, { non_map       }));
+	non_node->rules.push_back(Rule(non_node, { non_curl_map  }));
+	non_node->rules.push_back(Rule(non_node, { non_curl_map , term_new_line }));
+	non_node->rules.push_back(Rule(non_node, { non_sequence  }));
+	non_node->rules.push_back(Rule(non_node, { non_squre_seq }));
+	non_node->rules.push_back(Rule(non_node, { non_squre_seq, term_new_line }));
 
 
 	start->rules.push_back(Rule(start, { non_node }));
