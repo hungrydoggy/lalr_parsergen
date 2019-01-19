@@ -1,18 +1,23 @@
 #ifndef PAW_PRINT
 #define PAW_PRINT
 
-#include <unordered_map>
-#include <vector>
+#include <iostream>
 #include <stack>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
-#include <token.h>
-#include <node.h>
+#include "../../src/token.h"
+#include "../../src/node.h"
+
+#include "defines.h"
 
 
 namespace paw_print {
 
 
+using std::cout;
+using std::endl;
 using std::stack;
 using std::string;
 using std::unordered_map;
@@ -50,6 +55,7 @@ public:
 	class PAW_PRINT_API Data {
 	public:
 		using StrSizeType = unsigned short;
+		using ReferenceIdxType = unsigned int;
 
 		static const DataType TYPE_NONE = 0xff;
 
@@ -69,6 +75,8 @@ public:
 		static const DataType TYPE_MAP_END   = 8;
 
 		static const DataType TYPE_KEY_VALUE_PAIR = 9;
+
+		static const DataType TYPE_REFERENCE = 10;
 	};
 
     class PAW_PRINT_API Cursor {
@@ -97,10 +105,21 @@ public:
 
         bool isNull () const;
 
-        inline bool isValid () const { return idx_ >= 0; }
+        inline bool isValid () const {
+			if (paw_print_ == null)
+				return false;
+
+			if (paw_print_->isReference(idx_) == true)
+				return paw_print_->_getReference(idx_).isValid();
+			
+			return idx_ >= 0;
+		}
 
         template <class T>
         T get (T default_value) const {
+			if (paw_print_->isReference(idx_) == true)
+				return paw_print_->_getReference(idx_).get<T>(default_value);
+
             if (is<T>() == false)
                 return default_value;
             return paw_print_->getData<T>(idx_ + sizeof(DataType));
@@ -132,6 +151,7 @@ public:
 			return cursor.getValue();
 		}
 
+		const string & getName () const;
         int getColumn () const;
         int getLine () const;
 
@@ -151,25 +171,28 @@ public:
         return raw_data_;
     }
 
-    PawPrint ();
-    PawPrint (const vector<unsigned char> &raw_data);
-    PawPrint (const Cursor &cursor);
-    PawPrint (bool          value);
-    PawPrint (int           value);
-    PawPrint (float         value);
-    PawPrint (double        value);
-    PawPrint (const char   *value);
-    PawPrint (const string &value);
+	PAW_GETTER_SETTER(const string&, name)
 
-    PawPrint (const vector<int   > &value);
-    PawPrint (const vector<double> &value);
-    PawPrint (const vector<string> &value);
+    PawPrint (const string &name);
+    PawPrint (const string &name, const vector<unsigned char> &raw_data);
+    PawPrint (const string &name, const Cursor &cursor);
+    PawPrint (const string &name, bool          value);
+    PawPrint (const string &name, int           value);
+    PawPrint (const string &name, float         value);
+    PawPrint (const string &name, double        value);
+    PawPrint (const string &name, const char   *value);
+    PawPrint (const string &name, const string &value);
+
+    PawPrint (const string &name, const vector<int   > &value);
+    PawPrint (const string &name, const vector<double> &value);
+    PawPrint (const string &name, const vector<string> &value);
 
     ~PawPrint ();
 
     const PawPrint& operator = (const Cursor &cursor);
 
     DataType type (int idx) const;
+    bool isReference (int idx) const;
 
     int dataSize (int idx) const;
 
@@ -178,25 +201,28 @@ public:
     int getColumn (int idx) const;
     int getLine (int idx) const;
 
+	Cursor makeCursor (int idx) const;
+
 
     // write
-    void pushNull   (int column=-1, int line=-1); 
-    void pushBool   (bool   value, int column=-1, int line=-1); 
-    void pushInt    (int    value, int column=-1, int line=-1); 
-    void pushDouble (double value, int column=-1, int line=-1); 
-    void pushString (const char *value, int column=-1, int line=-1); 
-    inline void pushString (const string &value, int column=-1, int line=-1) {
+    int pushNull   (int column=-1, int line=-1); 
+    int pushBool   (bool   value, int column=-1, int line=-1); 
+    int pushInt    (int    value, int column=-1, int line=-1); 
+    int pushDouble (double value, int column=-1, int line=-1); 
+    int pushString (const char *value, int column=-1, int line=-1); 
+    inline int pushString (const string &value, int column=-1, int line=-1) {
         return pushString(value.c_str(), column, line);
     }
-    void pushKeyValuePair (int column=-1, int line=-1);
-    void pushKey (const char *value, int column=-1, int line=-1);
-    inline void pushKey (const string &value, int column=-1, int line=-1) {
+    int pushKeyValuePair (int column=-1, int line=-1);
+    int pushKey (const char *value, int column=-1, int line=-1);
+    inline int pushKey (const string &value, int column=-1, int line=-1) {
         return pushKey(value.c_str(), column, line);
     }
-    void beginSequence (int column=-1, int line=-1); 
-    void endSequence   (int column=-1, int line=-1); 
-    void beginMap (int column=-1, int line=-1); 
-    void endMap   (int column=-1, int line=-1); 
+    int pushReference (const Cursor &cursor, int column=-1, int line=-1);
+	int beginSequence (int column=-1, int line=-1);
+	int endSequence   (int column=-1, int line=-1);
+	int beginMap (int column=-1, int line=-1);
+	int endMap   (int column=-1, int line=-1);
 
 
     // read
@@ -210,7 +236,7 @@ public:
 
     template <class T>
     const T& getData (int idx) const {
-        return *((T*)&raw_data_[idx]);
+        return _getRawData<T>(idx);
     }
 
     const vector<int>& getDataIdxsOfSequence (int sequence_idx) const;
@@ -224,16 +250,27 @@ public:
             const char *key) const;
 
 private:
+	string name_;
     vector<unsigned char> raw_data_;
     mutable unordered_map<int, vector<int>> data_idxs_of_sequence_map_;
     mutable unordered_map<int, vector<int>> data_idxs_of_map_map_;
 	mutable unordered_map<int, vector<int>> sorted_data_idxs_of_map_map_;
     bool is_closed_;
 
+    vector<Cursor> references_;
+
     stack<int> curly_open_idx_stack_;
     stack<int> square_open_idx_stack_;
     unordered_map<int, unsigned short> column_map_;
     unordered_map<int, unsigned short> line_map_;
+
+
+    template <class T>
+    const T& _getRawData (int idx) const {
+        return *((T*)&raw_data_[idx]);
+    }
+
+    const Cursor& _getReference (int idx) const;
 };
 
 template<> PAW_PRINT_API bool PawPrint::Cursor::is<bool       > () const;
@@ -255,5 +292,7 @@ template<> PAW_PRINT_API float  PawPrint::Cursor::get<float > (float         def
 template<> PAW_PRINT_API double PawPrint::Cursor::get<double> (double        default_value) const;
 
 }
+
+#include "./undefines.h"
 
 #endif

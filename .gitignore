@@ -1,4 +1,6 @@
 build/*
-build_win/*
+build_win/**/.vs/*
+build_win/**/x86/*
+build_win/**/x64/*
 *.swp
 *.swo

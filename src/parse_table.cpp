@@ -5,7 +5,7 @@
 #include <iostream>
 #include <sstream>
 
-#include <paw_print.h>
+#include "../external/paw_print/paw_print.h"
 
 
 namespace parse_table {
@@ -578,7 +578,7 @@ static void _loadNonterminal(
 
 ParsingTable::ParsingTable (const vector<unsigned char> &data) {
 
-    PawPrint paw(data);
+    PawPrint paw("parsing table", data);
     auto root = paw.root();
 
     unordered_map<string, shared_ptr<TerminalBase>> termnon_map;
@@ -669,7 +669,7 @@ static void _pushNonterminal (const shared_ptr<Nonterminal> &non, PawPrint &paw)
 }
 
 bool ParsingTable::saveBinary (vector<unsigned char> &result) {
-    PawPrint paw;
+    PawPrint paw("parsing table");
 
     paw.beginSequence();
     

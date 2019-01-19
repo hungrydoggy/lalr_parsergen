@@ -5,9 +5,9 @@
 #include <sstream>
 #include <stdio.h>
 
-#include "./external/paw_print/paw_print.h"
-#include "./src/parse_table.h"
-#include "./src/parsing_table_generator.h"
+#include "../external/paw_print/paw_print.h"
+#include "../src/parse_table.h"
+#include "../src/parsing_table_generator.h"
 
 
 using namespace parse_table;
@@ -129,7 +129,7 @@ static void _t_generateParseTree () {
 
 	auto parsing_table = generator.generateTable();
     auto table_str = parsing_table->toString();
-    //cout << table_str;
+    cout << table_str;
 
     auto table_correct =
 		"##### Rules\n" \
@@ -365,7 +365,7 @@ static void _t_generateParseTree () {
 	delete[] text;
 }
 
-static void _t_generatePawPrintParsingTable () {
+static void _t_generateBunnyLangParsingTable () {
     Token::to_string_func = [](const char *text, const Token *t) {
         stringstream ss;
         ss << "Token(";
@@ -598,6 +598,6 @@ static void _t_generatePawPrintParsingTable () {
 
 int main () {
 	_t_generateParseTree();
-	_t_generatePawPrintParsingTable();
+	_t_generateBunnyLangParsingTable();
     return 0;
 }
