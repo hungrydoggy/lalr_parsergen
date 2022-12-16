@@ -540,8 +540,6 @@ static void _t_generatePawPrintParsingTable () {
   non_squre_seq->rules.push_back(
       Rule(non_squre_seq, { term_square_open, non_seq_blocked, term_square_close }));
   non_squre_seq->rules.push_back(
-      Rule(non_squre_seq, { term_square_open, non_seq_blocked, term_comma, term_square_close }));
-  non_squre_seq->rules.push_back(
       Rule(non_squre_seq, { term_square_open, term_new_line, term_square_close }));
   non_squre_seq->rules.push_back(
       Rule(non_squre_seq, {
@@ -551,21 +549,16 @@ static void _t_generatePawPrintParsingTable () {
         non_seq_blocked,
         term_dedent,
         term_square_close }));
-  non_squre_seq->rules.push_back(
-      Rule(non_squre_seq, {
-        term_square_open,
-        term_new_line,
-        term_indent,
-        non_seq_blocked,
-        term_comma,
-        term_dedent,
-        term_square_close }));
 
   // SEQ_BLOCKED
   non_seq_blocked->rules.push_back(
       Rule(non_seq_blocked, { non_node, term_comma, non_seq_blocked }));
   non_seq_blocked->rules.push_back(
       Rule(non_seq_blocked, { non_node, term_comma, term_new_line, non_seq_blocked }));
+  non_seq_blocked->rules.push_back(
+      Rule(non_seq_blocked, { non_node, term_comma, term_new_line }));
+  non_seq_blocked->rules.push_back(
+      Rule(non_seq_blocked, { non_node, term_comma }));
   non_seq_blocked->rules.push_back(
       Rule(non_seq_blocked, { non_node }));
 
