@@ -1,3 +1,4 @@
+.cache/*
 build/*
 build_win/**/.vs/*
 build_win/**/x86/*
