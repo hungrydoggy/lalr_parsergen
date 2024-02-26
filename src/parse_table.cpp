@@ -25,10 +25,10 @@ using namespace paw_print;
 
 
 Configuration::Configuration (
-		const shared_ptr<Nonterminal> &left_side,
-		const Rule &rule,
-		int idx_after_cursor,
-		const set<shared_ptr<TerminalBase>> &lookahead)
+    const shared_ptr<Nonterminal> &left_side,
+    const Rule &rule,
+    int idx_after_cursor,
+    const set<shared_ptr<TerminalBase>> &lookahead)
 :left_side_(left_side),
  rule_(rule),
  idx_after_cursor_(idx_after_cursor),
@@ -38,132 +38,132 @@ Configuration::Configuration (
 
 string Configuration::toString () {
     stringstream ss;
-	ss << left_side_->name << " -> ";
-	for (int ri = 0; ri < rule_.right_side.size(); ++ri) {
-		auto &termnon = rule_.right_side[ri];
-		if (ri == idx_after_cursor_)
-			ss << ".";
-		ss << termnon->name;
-		if (ri < rule_.right_side.size() - 1)
-			ss << " ";
-	}
+  ss << left_side_->name << " -> ";
+  for (int ri = 0; ri < rule_.right_side.size(); ++ri) {
+    auto &termnon = rule_.right_side[ri];
+    if (ri == idx_after_cursor_)
+      ss << ".";
+    ss << termnon->name;
+    if (ri < rule_.right_side.size() - 1)
+      ss << " ";
+  }
 
-	if (idx_after_cursor_ >= rule_.right_side.size())
-		ss << ".";
+  if (idx_after_cursor_ >= rule_.right_side.size())
+    ss << ".";
 
-	ss << "  , ";
-	int li = 0;
-	for (auto &termnon : lookahead_) {
-		if (li != 0)
-			ss << " / ";
-		if (termnon == null)
-			ss << "$";
-		else
-			ss << termnon->name;
-		++li;
-	}
+  ss << "  , ";
+  int li = 0;
+  for (auto &termnon : lookahead_) {
+    if (li != 0)
+      ss << " / ";
+    if (termnon == null)
+      ss << "$";
+    else
+      ss << termnon->name;
+    ++li;
+  }
 
-	ss << endl;
+  ss << endl;
 
     return ss.str();
 }
 
 State::State (
-		const vector<shared_ptr<Configuration>> &transited_configs,
-		const vector<shared_ptr<Configuration>> &closures)
+    const vector<shared_ptr<Configuration>> &transited_configs,
+    const vector<shared_ptr<Configuration>> &closures)
 :transited_configs_(transited_configs),
  closures_(closures) {
 
 }
 
 static void _addClosures (
-		const FirstMap &first_map,
-		const shared_ptr<Configuration> &c,
-		set<shared_ptr<Nonterminal>> &non_set,
-		vector<shared_ptr<Configuration>> &closures) {
-	auto &rule = c->rule();
-	auto idx_after_cursor = c->idx_after_cursor();
-	if (idx_after_cursor >= rule.right_side.size())
-		return;
+    const FirstMap &first_map,
+    const shared_ptr<Configuration> &c,
+    set<shared_ptr<Nonterminal>> &non_set,
+    vector<shared_ptr<Configuration>> &closures) {
+  auto &rule = c->rule();
+  auto idx_after_cursor = c->idx_after_cursor();
+  if (idx_after_cursor >= rule.right_side.size())
+    return;
 
-	// find non after cursor
-	auto &termnon = rule.right_side[idx_after_cursor];
-	if (termnon->isTerminal() == true)
-		return;
-	auto non = dynamic_pointer_cast<Nonterminal>(termnon);
-	
+  // find non after cursor
+  auto &termnon = rule.right_side[idx_after_cursor];
+  if (termnon->isTerminal() == true)
+    return;
+  auto non = dynamic_pointer_cast<Nonterminal>(termnon);
+  
 
-	// make lookahead
-	set<shared_ptr<TerminalBase>> lookahead;
-	if (idx_after_cursor + 1 >= rule.right_side.size()) {
-		// if next isn't exist, use lookahead
-		lookahead = c->lookahead();
-	}else {
-		// use first(next)
-		auto &next = rule.right_side[idx_after_cursor + 1];
-		if (next->isTerminal() == true)
-			lookahead.insert(next);
-		else
-			lookahead = first_map.at(next);
-	}
+  // make lookahead
+  set<shared_ptr<TerminalBase>> lookahead;
+  if (idx_after_cursor + 1 >= rule.right_side.size()) {
+    // if next isn't exist, use lookahead
+    lookahead = c->lookahead();
+  }else {
+    // use first(next)
+    auto &next = rule.right_side[idx_after_cursor + 1];
+    if (next->isTerminal() == true)
+      lookahead.insert(next);
+    else
+      lookahead = first_map.at(next);
+  }
 
 
-	// add closures
-	if (non_set.find(non) == non_set.end()) {
-		// add configs to closures
-		non_set.insert(non);
-		for (auto &rule : non->rules) {
-			closures.push_back(make_shared<Configuration>(non, rule, 0, lookahead));
-		}
-	}else {
-		// merge lookahead
-		for (auto &c : closures) {
-			if (c->left_side() != non)
-				continue;
+  // add closures
+  if (non_set.find(non) == non_set.end()) {
+    // add configs to closures
+    non_set.insert(non);
+    for (auto &rule : non->rules) {
+      closures.push_back(make_shared<Configuration>(non, rule, 0, lookahead));
+    }
+  }else {
+    // merge lookahead
+    for (auto &c : closures) {
+      if (c->left_side() != non)
+        continue;
 
-			c->lookahead().insert(lookahead.begin(), lookahead.end());
-		}
-	}
+      c->lookahead().insert(lookahead.begin(), lookahead.end());
+    }
+  }
 }
 
 shared_ptr<State> State::makeState(
-		const vector<shared_ptr<Nonterminal>> &all_symbols,
-		const FirstMap &first_map,
-		const vector<shared_ptr<Configuration>> &transited_configs) {
+    const vector<shared_ptr<Nonterminal>> &all_symbols,
+    const FirstMap &first_map,
+    const vector<shared_ptr<Configuration>> &transited_configs) {
 
-	// make nonterminal set to prevent Configuration duplicated
-	set<shared_ptr<Nonterminal>> non_set;
+  // make nonterminal set to prevent Configuration duplicated
+  set<shared_ptr<Nonterminal>> non_set;
 
-	// make closures
-	vector<shared_ptr<Configuration>> closures;
-	for (auto &c : transited_configs)
-		_addClosures(first_map, c, non_set, closures);
+  // make closures
+  vector<shared_ptr<Configuration>> closures;
+  for (auto &c : transited_configs)
+    _addClosures(first_map, c, non_set, closures);
 
-	// add closures from closures
-	for (int ci = 0; ci < closures.size(); ++ci) {
-		auto &c = closures[ci];
+  // add closures from closures
+  for (int ci = 0; ci < closures.size(); ++ci) {
+    auto &c = closures[ci];
 
-		_addClosures(first_map, c, non_set, closures);
-	}
+    _addClosures(first_map, c, non_set, closures);
+  }
 
-	return make_shared<State>(transited_configs, closures);
+  return make_shared<State>(transited_configs, closures);
 }
 
 void State::print () {
-	cout << "## state " << name_ << endl;
-	cout << "transited:" << endl;
-	for (auto &c : transited_configs_)
-		cout << c->toString();
+  cout << "## state " << name_ << endl;
+  cout << "transited:" << endl;
+  for (auto &c : transited_configs_)
+    cout << c->toString();
 
-	cout << "closures:" << endl;
-	for (auto &c : closures_)
-		cout << c->toString();
+  cout << "closures:" << endl;
+  for (auto &c : closures_)
+    cout << c->toString();
 
-	cout << "transition:" << endl;
-	for (auto &itr : transition_map_) {
+  cout << "transition:" << endl;
+  for (auto &itr : transition_map_) {
         auto name = (itr.first == null)? "$" : itr.first->name;
-		cout << name << " ==> " << itr.second->name() << endl;
-	}
+    cout << name << " ==> " << itr.second->name() << endl;
+  }
 }
 
 
@@ -179,99 +179,99 @@ ParsingTable::ActionInfo::ActionInfo (Action action, int idx)
 }
 
 static void _makeReduceTable (
-		const map<const Rule*, int> &rule_idx_map,
-		const shared_ptr<Nonterminal> &start_symbol,
-		const vector<shared_ptr<Configuration>> &configs,
-		map<shared_ptr<TerminalBase>, ParsingTable::ActionInfo> &action_info_map) {
+    const map<const Rule*, int> &rule_idx_map,
+    const shared_ptr<Nonterminal> &start_symbol,
+    const vector<shared_ptr<Configuration>> &configs,
+    map<shared_ptr<TerminalBase>, ParsingTable::ActionInfo> &action_info_map) {
 
-	for (auto &c : configs) {
-		auto &rule = c->rule();
-		if (c->idx_after_cursor() < rule.right_side.size())
-			continue;
+  for (auto &c : configs) {
+    auto &rule = c->rule();
+    if (c->idx_after_cursor() < rule.right_side.size())
+      continue;
 
-		int rule_idx = rule_idx_map.at(&rule);
-		for (auto &termnon : c->lookahead()) {
-			if (c->left_side() == start_symbol && termnon == null) {
-				action_info_map[termnon] = ParsingTable::ActionInfo(
-						ParsingTable::ActionInfo::ACCEPT, rule_idx);
-			}else {
-				action_info_map[termnon] = ParsingTable::ActionInfo(
-						ParsingTable::ActionInfo::REDUCE, rule_idx);
-			}
-		}
-	}
+    int rule_idx = rule_idx_map.at(&rule);
+    for (auto &termnon : c->lookahead()) {
+      if (c->left_side() == start_symbol && termnon == null) {
+        action_info_map[termnon] = ParsingTable::ActionInfo(
+            ParsingTable::ActionInfo::ACCEPT, rule_idx);
+      }else {
+        action_info_map[termnon] = ParsingTable::ActionInfo(
+            ParsingTable::ActionInfo::REDUCE, rule_idx);
+      }
+    }
+  }
 }
 
 static void _makeTransitionTable(
-		const map<shared_ptr<TerminalBase>, shared_ptr<State>> &transition_map,
-		const map<shared_ptr<State>, int> &state_idx_map,
-		map<shared_ptr<TerminalBase>, ParsingTable::ActionInfo> &action_info_map) {
+    const map<shared_ptr<TerminalBase>, shared_ptr<State>> &transition_map,
+    const map<shared_ptr<State>, int> &state_idx_map,
+    map<shared_ptr<TerminalBase>, ParsingTable::ActionInfo> &action_info_map) {
 
-	for (auto &itr : transition_map) {
-		auto &termnon = itr.first;
-		auto &state   = itr.second;
+  for (auto &itr : transition_map) {
+    auto &termnon = itr.first;
+    auto &state   = itr.second;
 
-		if (termnon->isTerminal() == true) {
-			action_info_map[termnon] =
-				ParsingTable::ActionInfo(
-					ParsingTable::ActionInfo::SHIFT, state_idx_map.at(state));
-		}else {
-			action_info_map[termnon] =
-				ParsingTable::ActionInfo(
-					ParsingTable::ActionInfo::GOTO, state_idx_map.at(state));
-		}
-	}
+    if (termnon->isTerminal() == true) {
+      action_info_map[termnon] =
+        ParsingTable::ActionInfo(
+          ParsingTable::ActionInfo::SHIFT, state_idx_map.at(state));
+    }else {
+      action_info_map[termnon] =
+        ParsingTable::ActionInfo(
+          ParsingTable::ActionInfo::GOTO, state_idx_map.at(state));
+    }
+  }
 }
 
 ParsingTable::ParsingTable(
-		const vector<shared_ptr<Nonterminal>> &symbols,
-		const shared_ptr<Nonterminal> &start_symbol,
-		const vector<shared_ptr<State>> &states) {
+    const vector<shared_ptr<Nonterminal>> &symbols,
+    const shared_ptr<Nonterminal> &start_symbol,
+    const vector<shared_ptr<State>> &states) {
 
     symbols_ = symbols;
     start_symbol_ = start_symbol;
 
-	map<shared_ptr<State>, int> state_idx_map;
-	for (int si = 0; si < states.size(); ++si)
-		state_idx_map[states[si]] = si;
+  map<shared_ptr<State>, int> state_idx_map;
+  for (int si = 0; si < states.size(); ++si)
+    state_idx_map[states[si]] = si;
 
-	// rules
-	map<const Rule*, int> rule_idx_map;
-	for (auto &r : start_symbol->rules) {
-		rule_idx_map[&r] = rules_.size();
-		rules_.push_back(&r);
-	}
-	for (auto &non : symbols) {
-		for (auto &r : non->rules) {
-			rule_idx_map[&r] = rules_.size();
-			rules_.push_back(&r);
-		}
-	}
+  // rules
+  map<const Rule*, int> rule_idx_map;
+  for (auto &r : start_symbol->rules) {
+    rule_idx_map[&r] = rules_.size();
+    rules_.push_back(&r);
+  }
+  for (auto &non : symbols) {
+    for (auto &r : non->rules) {
+      rule_idx_map[&r] = rules_.size();
+      rules_.push_back(&r);
+    }
+  }
 
     // terminals
-	for (auto &rule : rules_) {
+  for (auto &rule : rules_) {
         for (auto &termnon : rule->right_side) {
             if (termnon->isTerminal() == false)
                 continue;
             auto term = dynamic_pointer_cast<Terminal>(termnon);
             terminal_map_[term->token_type] = term;
         }
-	}
+  }
     terminal_map_[0] = null;
 
-	// make table
-	action_info_map_list_.resize(states.size());
-	for (int si = 0; si < states.size(); ++si) {
-		auto &s = states[si];
-		auto &action_info_map = action_info_map_list_[si];
+  // make table
+  action_info_map_list_.resize(states.size());
+  for (int si = 0; si < states.size(); ++si) {
+    auto &s = states[si];
+    auto &action_info_map = action_info_map_list_[si];
 
-		// make about reduce
-		_makeReduceTable(rule_idx_map, start_symbol, s->transited_configs(), action_info_map);
-		_makeReduceTable(rule_idx_map, start_symbol, s->closures()         , action_info_map);
+    // make about reduce
+    _makeReduceTable(rule_idx_map, start_symbol, s->transited_configs(), action_info_map);
+    _makeReduceTable(rule_idx_map, start_symbol, s->closures()         , action_info_map);
 
-		// transition
-		_makeTransitionTable(s->transition_map(), state_idx_map, action_info_map);
-	}
+    // transition
+    _makeTransitionTable(s->transition_map(), state_idx_map, action_info_map);
+  }
 }
 
 static string _actionInfoToString (ParsingTable::ActionInfo info) {
@@ -292,10 +292,10 @@ static string _actionInfoToString (ParsingTable::ActionInfo info) {
 static bool _sortFuncForTerminalBaseByString (
         const shared_ptr<TerminalBase> &a,
         const shared_ptr<TerminalBase> &b) {
-	if (a == null)
-		return true;
-	else if (b == null)
-		return false;
+  if (a == null)
+    return true;
+  else if (b == null)
+    return false;
 
     return a->name < b->name;
 }
@@ -558,114 +558,114 @@ shared_ptr<Node> ParsingTable::generateParseTree (
 }
 
 static void _loadNonterminal(
-		const PawPrint::Cursor &pp_rules,
-		const shared_ptr<Nonterminal> &non,
-		unordered_map<string, shared_ptr<TerminalBase>> termnon_map) {
+    shared_ptr<Cursor> const& pp_rules,
+    shared_ptr<Nonterminal> const& non,
+    unordered_map<string, shared_ptr<TerminalBase>> termnon_map) {
 
-	non->rules.resize(pp_rules.size());
-	for (int ri = 0; ri<pp_rules.size(); ++ri) {
-		auto pp_rule = pp_rules[ri];
+  non->rules.resize(pp_rules->size());
+  for (int ri = 0; ri<pp_rules->size(); ++ri) {
+    auto pp_rule = pp_rules->getElem(ri);
 
-		auto &rule = non->rules[ri];
-		rule.left_side = dynamic_pointer_cast<Nonterminal>(
-			termnon_map[pp_rule[0].get("")]);
+    auto &rule = non->rules[ri];
+    rule.left_side = dynamic_pointer_cast<Nonterminal>(
+      termnon_map[pp_rule->getElem(0)->get("")]);
 
-		rule.right_side.resize(pp_rule.size() - 1);
-		for (int rri = 1; rri<pp_rule.size(); ++rri)
-			rule.right_side[rri - 1] = termnon_map[pp_rule[rri].get("")];
-	}
+    rule.right_side.resize(pp_rule->size() - 1);
+    for (int rri = 1; rri<pp_rule->size(); ++rri)
+      rule.right_side[rri - 1] = termnon_map[pp_rule->getElem(rri)->get("")];
+  }
 }
 
-ParsingTable::ParsingTable (const vector<unsigned char> &data) {
+ParsingTable::ParsingTable (vector<unsigned char> const& data) {
 
-    PawPrint paw("parsing table", data);
-    auto root = paw.root();
+    auto paw = make_shared<PawPrint>("parsing table", data);
+    auto root = PawPrint::root(paw);
 
     unordered_map<string, shared_ptr<TerminalBase>> termnon_map;
 
     // load terminals
-    auto pp_terminals = root[0];
-    for (int ti=0; ti<pp_terminals.size(); ++ti) {
-        auto pp_term = pp_terminals[ti];
-        auto name       = pp_term[0].get("");
-        auto token_type = pp_term[1].get(-1);
+    auto pp_terminals = root->getElem(0);
+    for (int ti=0; ti<pp_terminals->size(); ++ti) {
+        auto pp_term = pp_terminals->getElem(ti);
+        auto name       = pp_term->getElem(0)->get("");
+        auto token_type = pp_term->getElem(1)->get(-1);
 
         auto term = make_shared<Terminal>(name, token_type);
-		if (name == "$")
-			term = null;
+    if (name == "$")
+      term = null;
         terminal_map_[token_type] = term;
         termnon_map[name] = term;
     }
 
     // load nonterminals
-    auto pp_nonterminals = root[1];
-    for (int ni=0; ni<pp_nonterminals.size(); ni+=2) {
-        auto name = pp_nonterminals[ni].get("");
+    auto pp_nonterminals = root->getElem(1);
+    for (int ni=0; ni<pp_nonterminals->size(); ni+=2) {
+        auto name = pp_nonterminals->getElem(ni)->get("");
 
         auto non = make_shared<Nonterminal>(name);
         termnon_map[name] = non;
-		symbols_.push_back(non);
+    symbols_.push_back(non);
     }
-    for (int ni=0; ni<pp_nonterminals.size(); ni+=2) {
-        auto name     = pp_nonterminals[ni  ].get("");
-        auto pp_rules = pp_nonterminals[ni+1];
+    for (int ni=0; ni<pp_nonterminals->size(); ni+=2) {
+        auto name     = pp_nonterminals->getElem(ni  )->get("");
+        auto pp_rules = pp_nonterminals->getElem(ni+1);
 
         auto non = dynamic_pointer_cast<Nonterminal>(termnon_map[name]);
-		_loadNonterminal(pp_rules, non, termnon_map);
+    _loadNonterminal(pp_rules, non, termnon_map);
     }
 
     // start symbol
-	auto start_symbol_name     = root[2].get("");
-	auto pp_start_symbol_rules = root[3];
-	start_symbol_ = make_shared<Nonterminal>(start_symbol_name);
-	_loadNonterminal(pp_start_symbol_rules, start_symbol_, termnon_map);
-	for (auto &r : start_symbol_->rules)
-		r.left_side = start_symbol_;
+  auto start_symbol_name     = root->getElem(2)->get("");
+  auto pp_start_symbol_rules = root->getElem(3);
+  start_symbol_ = make_shared<Nonterminal>(start_symbol_name);
+  _loadNonterminal(pp_start_symbol_rules, start_symbol_, termnon_map);
+  for (auto &r : start_symbol_->rules)
+    r.left_side = start_symbol_;
 
     // action_info_map_list_
-    auto pp_action_info_map_list = root[4];
-    action_info_map_list_.resize(pp_action_info_map_list.size());
-    for (int aim_idx=0; aim_idx<pp_action_info_map_list.size(); ++aim_idx) {
-        auto pp_action_info_map = pp_action_info_map_list[aim_idx];
-        auto &action_info_map   = action_info_map_list_  [aim_idx];
-        for (int ai_idx=0; ai_idx<pp_action_info_map.size(); ++ai_idx) {
-			auto pair = pp_action_info_map.getKeyValuePair(ai_idx);
-            auto name           = pair.getKey  ();
-            auto pp_action_info = pair.getValue();
+    auto pp_action_info_map_list = root->getElem(4);
+    action_info_map_list_.resize(pp_action_info_map_list->size());
+    for (int aim_idx=0; aim_idx<pp_action_info_map_list->size(); ++aim_idx) {
+        auto pp_action_info_map = pp_action_info_map_list->getElem(aim_idx);
+        auto &action_info_map   = action_info_map_list_           [aim_idx];
+        for (int ai_idx=0; ai_idx<pp_action_info_map->size(); ++ai_idx) {
+      auto pair = pp_action_info_map->getKeyValuePair(ai_idx);
+            auto name           = pair->getKey  ();
+            auto pp_action_info = pair->getValue();
 
             auto &termnon = termnon_map[name];
             action_info_map[termnon] = ActionInfo(
-                    (ParsingTable::ActionInfo::Action)pp_action_info[0].get(-1),
-                    pp_action_info[1].get(-1));
+                    (ParsingTable::ActionInfo::Action)pp_action_info->getElem(0)->get(-1),
+                    pp_action_info->getElem(1)->get(-1));
         }
     }
 
-	// rules
-	map<const Rule*, int> rule_idx_map;
-	for (auto &r : start_symbol_->rules) {
-		rule_idx_map[&r] = rules_.size();
-		rules_.push_back(&r);
-	}
-	for (auto &non : symbols_) {
-		for (auto &r : non->rules) {
-			rule_idx_map[&r] = rules_.size();
-			rules_.push_back(&r);
-		}
-	}
+  // rules
+  map<const Rule*, int> rule_idx_map;
+  for (auto &r : start_symbol_->rules) {
+    rule_idx_map[&r] = rules_.size();
+    rules_.push_back(&r);
+  }
+  for (auto &non : symbols_) {
+    for (auto &r : non->rules) {
+      rule_idx_map[&r] = rules_.size();
+      rules_.push_back(&r);
+    }
+  }
 }
 
 static void _pushNonterminal (const shared_ptr<Nonterminal> &non, PawPrint &paw) {
-	paw.pushString(non->name);
-	paw.beginSequence(); // rules
-	for (auto &r : non->rules) {
-		paw.beginSequence();
+  paw.pushString(non->name);
+  paw.beginSequence(); // rules
+  for (auto &r : non->rules) {
+    paw.beginSequence();
             paw.pushString(r.left_side->name);
             for (auto &rn : r.right_side) {
                 paw.pushString(rn->name);
             }
-		paw.endSequence();
-	}
-	paw.endSequence();
+    paw.endSequence();
+  }
+  paw.endSequence();
 }
 
 bool ParsingTable::saveBinary (vector<unsigned char> &result) {
@@ -677,26 +677,26 @@ bool ParsingTable::saveBinary (vector<unsigned char> &result) {
         paw.beginSequence();
             for (auto &itr : terminal_map_) {
                 auto &term = itr.second;
-				paw.beginSequence();
-				if (term != null) {
-					paw.pushString(term->name);
-					paw.pushInt(term->token_type);
-				}else {
-					paw.pushString("$");
-					paw.pushInt(0);
-				}
-				paw.endSequence();
+        paw.beginSequence();
+        if (term != null) {
+          paw.pushString(term->name);
+          paw.pushUint2B(term->token_type);
+        }else {
+          paw.pushString("$");
+          paw.pushUint2B(0);
+        }
+        paw.endSequence();
             }
         paw.endSequence();
 
         // nonterminals
         paw.beginSequence();
             for (auto &non : symbols_)
-				_pushNonterminal(non, paw);
+        _pushNonterminal(non, paw);
         paw.endSequence();
 
         // start symbol
-		_pushNonterminal(start_symbol_, paw);
+    _pushNonterminal(start_symbol_, paw);
 
         // action_info_map_list_
         paw.beginSequence();
@@ -706,13 +706,13 @@ bool ParsingTable::saveBinary (vector<unsigned char> &result) {
                         auto &termnon = itr.first;
                         auto &info    = itr.second;
 
-						if (termnon != null)
-							paw.pushKey(termnon->name);
-						else
-							paw.pushKey("$");
+            if (termnon != null)
+              paw.pushKey(termnon->name);
+            else
+              paw.pushKey("$");
                         paw.beginSequence(); // ActionInfo
-                            paw.pushInt(info.action);
-                            paw.pushInt(info.idx   );
+                            paw.pushUint1B(info.action);
+                            paw.pushSint4B(info.idx   );
                         paw.endSequence();
                     }
                 paw.endMap();

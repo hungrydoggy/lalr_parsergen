@@ -1,7 +1,4 @@
-project('lalr_parsergen', 'cpp', default_options : ['cpp_std=c++11'])
-
-
-add_global_arguments('-std=c++11', language : 'cpp')
+project('lalr_parsergen', 'cpp', default_options : ['cpp_std=c++20'])
 
 
 inc_dirs = [

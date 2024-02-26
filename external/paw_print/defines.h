@@ -1,3 +1,8 @@
+#ifndef PAW_PRINT_SRC_DEFINES_H_
+#define PAW_PRINT_SRC_DEFINES_H_
+
+#include <stdint.h>
+
 
 #define null 0
 #define appetizer_null 0
@@ -24,3 +29,18 @@ PAW_SETTER(TYPE, VAR_NAME)
 #else
 	#define PAW_PRINT_API 
 #endif
+
+
+namespace paw_print {
+
+using byte   = unsigned char;
+using ushort = unsigned short;
+using uint   = unsigned int;
+using int64  = int64_t;
+using uint64 = uint64_t;
+
+using DataType = byte;
+
+}
+
+#endif  // ifndef PAW_PRINT_SRC_DEFINES_H_

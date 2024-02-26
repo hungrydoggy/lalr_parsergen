@@ -7,10 +7,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../../src/token.h"
-#include "../../src/node.h"
+#include "../src/token.h"
+#include "../src/node.h"
 
-#include "defines.h"
+#include "./defines.h"
 
 
 namespace paw_print {
@@ -25,7 +25,9 @@ using std::vector;
 
 using namespace parse_table;
 
-using DataType = unsigned char;
+
+class Cursor;
+
 
 class PAW_PRINT_API TokenType {
 public:
@@ -55,154 +57,63 @@ public:
   class PAW_PRINT_API Data {
   public:
     using StrSizeType = unsigned short;
-    using ReferenceIdxType = unsigned int;
+    using ReferenceIdxType = uint;
 
 
     static const DataType TYPE_NONE = 0xff;
 
     static const DataType TYPE_NULL = 0;
 
-    static const DataType TYPE_BOOL   = 1;
-    static const DataType TYPE_INT    = 2;
-    static const DataType TYPE_DOUBLE = 3;
-    static const DataType TYPE_STRING = 4;
+    static const DataType TYPE_SINT_1B =  1;  // char
+    static const DataType TYPE_UINT_1B =  2;  // byte
+    static const DataType TYPE_SINT_2B =  3;  // short
+    static const DataType TYPE_UINT_2B =  4;  // ushort
+    static const DataType TYPE_SINT_4B =  5;  // int
+    static const DataType TYPE_UINT_4B =  6;  // uint
+    static const DataType TYPE_SINT_8B =  7;  // int64
+    static const DataType TYPE_UINT_8B =  8;  // uint64
+    static const DataType TYPE_REAL_4B =  9;  // float
+    static const DataType TYPE_REAL_8B = 10;  // double
+    static const DataType TYPE_STRING  = 11;
 
-    static const DataType TYPE_SEQUENCE       = 5;
-    static const DataType TYPE_SEQUENCE_START = 5;
-    static const DataType TYPE_SEQUENCE_END   = 6;
+    static const DataType TYPE_SEQUENCE       = 12;
+    static const DataType TYPE_SEQUENCE_START = 12;
+    static const DataType TYPE_SEQUENCE_END   = 13;
 
-    static const DataType TYPE_MAP       = 7;
-    static const DataType TYPE_MAP_START = 7;
-    static const DataType TYPE_MAP_END   = 8;
+    static const DataType TYPE_MAP       = 14;
+    static const DataType TYPE_MAP_START = 14;
+    static const DataType TYPE_MAP_END   = 15;
 
-    static const DataType TYPE_KEY_VALUE_PAIR = 9;
+    static const DataType TYPE_KEY_VALUE_PAIR = 16;
 
-    static const DataType TYPE_REFERENCE = 10;
+    static const DataType TYPE_REFERENCE = 17;
   };
 
 
-  class PAW_PRINT_API Cursor {
-  public:
-    Cursor ();
-    Cursor (
-        const PawPrint *paw_print,
-        int idx,
-        const shared_ptr<PawPrint> &holdable = null
-    );
-    Cursor (const Cursor &cursor);
+public:
+  static shared_ptr<Cursor> root (const shared_ptr<PawPrint> &paw_print);
+
+  static shared_ptr<Cursor> makeCursor (const shared_ptr<PawPrint> &paw_print, int idx);
 
 
-    const PawPrint* paw_print () const { return paw_print_; }
-
-    inline int idx () const { return idx_; }
-    DataType type () const;
-    int size () const;
-
-
-    template <class T>
-    bool is () const { return false; }
-
-    template <class T>
-    bool isConvertable () const { return false; }
-
-    bool isSequence () const;
-    bool isMap () const;
-    bool isKeyValuePair () const;
-
-    bool isNull () const;
-
-    inline bool isValid () const {
-      if (paw_print_ == null)
-        return false;
-
-      if (paw_print_->isReference(idx_) == true)
-        return paw_print_->_getReference(idx_).isValid();
-      
-      return idx_ >= 0;
-    }
-
-    template <class T>
-    T get (T default_value) const {
-      if (paw_print_->isReference(idx_) == true)
-        return paw_print_->_getReference(idx_).get<T>(default_value);
-
-      if (is<T>() == false)
-        return default_value;
-      return paw_print_->getData<T>(idx_ + sizeof(DataType));
-    }
-
-    string get (const char *default_value) const;
-    string get (const string &default_value) const;
-
-    Cursor operator[] (int idx) const;
-    Cursor operator[] (const char *key) const;
-    Cursor operator[] (const string &key) const;
-
-    const Cursor& operator = (const Cursor &cursor);
-
-    Cursor getKeyValuePair (int idx) const;
-
-    string toString (int indent=0, int indent_inc=2, bool ignore_indent=false) const;
-
-    const char* getKey () const;
-    Cursor getValue () const;
-    inline const char* getKeyOfPair(int idx) const {
-      auto cursor = getKeyValuePair(idx);
-      return cursor.getKey();
-    }
-    inline Cursor getValueOfPair(int idx) const {
-      auto cursor = getKeyValuePair(idx);
-      return cursor.getValue();
-    }
-
-    const string & getName () const;
-    int getColumn () const;
-    int getLine () const;
-
-    inline void hold (const shared_ptr<PawPrint> &sp) {
-      if (sp.get() == paw_print_)
-        holder_ = sp;
-    }
-
-
-  private:
-    const PawPrint *paw_print_;
-    int idx_;
-    shared_ptr<PawPrint> holder_; 
-  };
-
-
-  class PAW_PRINT_API MapLoader {
-  public:
-    using LoaderFunc = function<void(const Cursor &value)>;
-
-
-    MapLoader ();
-    MapLoader (const vector<std::pair<string, LoaderFunc>> &cases);
-
-
-    void load (const Cursor &cursor);
-
-    inline void addCase (const char *key, LoaderFunc func) {
-      cases_.push_back(std::pair<string, LoaderFunc>(key, func));
-    }
-
-    inline size_t case_size () const { return cases_.size(); }
-
-
-  private:
-    vector<std::pair<string, LoaderFunc>> cases_;
-  };
-
-
-
+public:
   PawPrint (const string &name);
-  PawPrint (const string &name, const vector<unsigned char> &raw_data);
-  PawPrint (const string &name, const Cursor &cursor);
-  PawPrint (const string &name, bool      value);
-  PawPrint (const string &name, int       value);
-  PawPrint (const string &name, float     value);
-  PawPrint (const string &name, double    value);
+
+  PawPrint (const string &name, const vector<byte> &raw_data);
+  PawPrint (const string &name, const shared_ptr<Cursor> &cursor);
+
+  PawPrint (const string &name, bool   value);
+  PawPrint (const string &name, char   value); 
+  PawPrint (const string &name, byte   value); 
+  PawPrint (const string &name, short  value); 
+  PawPrint (const string &name, ushort value); 
+  PawPrint (const string &name, int    value); 
+  PawPrint (const string &name, uint   value); 
+  PawPrint (const string &name, int64  value); 
+  PawPrint (const string &name, uint64 value); 
+  PawPrint (const string &name, float  value); 
+  PawPrint (const string &name, double value); 
+
   PawPrint (const string &name, const char   *value);
   PawPrint (const string &name, const string &value);
 
@@ -214,8 +125,12 @@ public:
 
 
   PAW_GETTER_SETTER(const string&, name)
+  PAW_GETTER_SETTER(int, last_pushed_idx)
 
-  inline vector<unsigned char>& raw_data () {
+  PAW_GETTER(bool, is_closed)
+
+
+  inline vector<byte>& raw_data () {
     return raw_data_;
   }
 
@@ -223,41 +138,54 @@ public:
   bool isReference (int idx) const;
 
 
-  const PawPrint& operator = (const Cursor &cursor);
+  const PawPrint& operator = (const shared_ptr<Cursor> &cursor);
   int dataSize (int idx) const;
 
-  void setRawData (const vector<unsigned char> &raw_data);
+  void setRawData (const vector<byte> &raw_data);
 
-  int getColumn (int idx) const;
-  int getLine (int idx) const;
-
-  Cursor makeCursor (int idx) const;
+  uint getColumn (int idx) const;
+  uint getLine (int idx) const;
+  uint findMaxLine () const;
 
 
   // write
-  int pushNull   (int column=-1, int line=-1); 
-  int pushBool   (bool   value, int column=-1, int line=-1); 
-  int pushInt    (int    value, int column=-1, int line=-1); 
-  int pushDouble (double value, int column=-1, int line=-1); 
-  int pushString (const char *value, int column=-1, int line=-1); 
-  inline int pushString (const string &value, int column=-1, int line=-1) {
+  int pushSint1B (char   value, uint column=0, uint line=0); 
+  int pushUint1B (byte   value, uint column=0, uint line=0); 
+  int pushSint2B (short  value, uint column=0, uint line=0); 
+  int pushUint2B (ushort value, uint column=0, uint line=0); 
+  int pushSint4B (int    value, uint column=0, uint line=0); 
+  int pushUint4B (uint   value, uint column=0, uint line=0); 
+  int pushSint8B (int64  value, uint column=0, uint line=0); 
+  int pushUint8B (uint64 value, uint column=0, uint line=0); 
+  int pushReal4B (float  value, uint column=0, uint line=0); 
+  int pushReal8B (double value, uint column=0, uint line=0); 
+
+  int pushBool   (bool   value, uint column=0, uint line=0); 
+
+  int pushString (const char *value, uint column=0, uint line=0); 
+  inline int pushString (const string &value, uint column=0, uint line=0) {
     return pushString(value.c_str(), column, line);
   }
-  int pushKeyValuePair (int column=-1, int line=-1);
-  int pushKey (const char *value, int column=-1, int line=-1);
-  inline int pushKey (const string &value, int column=-1, int line=-1) {
+
+  int pushNull   (uint column=0, uint line=0); 
+
+  int pushReference (const shared_ptr<Cursor> &cursor, uint column=0, uint line=0);
+
+  int beginSequence (uint column=0, uint line=0);
+  int endSequence   (uint column=0, uint line=0);
+
+  int beginMap (uint column=0, uint line=0);
+  int endMap   (uint column=0, uint line=0);
+
+  int pushKeyValuePair (uint column=0, uint line=0);
+
+  int pushKey (const char *value, uint column=0, uint line=0);
+  inline int pushKey (const string &value, uint column=0, uint line=0) {
     return pushKey(value.c_str(), column, line);
   }
-  int pushReference (const Cursor &cursor, int column=-1, int line=-1);
-  int beginSequence (int column=-1, int line=-1);
-  int endSequence   (int column=-1, int line=-1);
-  int beginMap (int column=-1, int line=-1);
-  int endMap   (int column=-1, int line=-1);
 
 
   // read
-  Cursor root () const;
-
   Data::StrSizeType getStrSize (int idx) const;
   const char* getStrValue (int idx) const;
 
@@ -268,6 +196,8 @@ public:
   const T& getData (int idx) const {
     return _getRawData<T>(idx);
   }
+
+  const shared_ptr<Cursor>& getReference (int idx) const;
 
   const vector<int>& getDataIdxsOfSequence (int sequence_idx) const;
   const vector<int>& getDataIdxsOfMap     (int map_idx) const;
@@ -282,48 +212,32 @@ public:
 
 private:
   string name_;
-  vector<unsigned char> raw_data_;
+  vector<byte> raw_data_;
   mutable unordered_map<int, vector<int>> data_idxs_of_sequence_map_;
   mutable unordered_map<int, vector<int>> data_idxs_of_map_map_;
   mutable unordered_map<int, vector<int>> sorted_data_idxs_of_map_map_;
   bool is_closed_;
+  int last_pushed_idx_;
 
-  vector<Cursor> references_;
+  vector<shared_ptr<Cursor>> references_;
 
   stack<int> curly_open_idx_stack_;
   stack<int> square_open_idx_stack_;
-  unordered_map<int, unsigned short> column_map_;
-  unordered_map<int, unsigned short> line_map_;
+  unordered_map<int, uint> column_map_;
+  unordered_map<int, uint> line_map_;
 
 
   template <class T>
   const T& _getRawData (int idx) const {
     return *((T*)&raw_data_[idx]);
   }
-
-  const Cursor& _getReference (int idx) const;
 };
 
-
-template<> PAW_PRINT_API bool PawPrint::Cursor::is<bool       > () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::is<int        > () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::is<float      > () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::is<double     > () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::is<const char*> () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::is<string     > () const;
-
-template<> PAW_PRINT_API bool PawPrint::Cursor::isConvertable<bool       > () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::isConvertable<int        > () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::isConvertable<float      > () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::isConvertable<double     > () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::isConvertable<const char*> () const;
-template<> PAW_PRINT_API bool PawPrint::Cursor::isConvertable<string     > () const;
-
-template<> PAW_PRINT_API bool   PawPrint::Cursor::get<bool  > (bool      default_value) const;
-template<> PAW_PRINT_API float  PawPrint::Cursor::get<float > (float     default_value) const;
-template<> PAW_PRINT_API double PawPrint::Cursor::get<double> (double    default_value) const;
-
 }
+
+
+// for paw_print user
+#include "./cursor.h"
 
 #include "./undefines.h"
 
